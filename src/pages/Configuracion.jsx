@@ -62,6 +62,9 @@ export default function Configuracion() {
   const [errorEliminar, setErrorEliminar] = useState('')
   const [verificandoEliminar, setVerificandoEliminar] = useState(false)
   const [passwordEliminacionValida, setPasswordEliminacionValida] = useState(false)
+  const [checksEliminar, setChecksEliminar] = useState({ periodo: false, cancelar: false, permanente: false })
+  const [confirmarEliminar, setConfirmarEliminar] = useState(false)
+  const [eliminandoCuenta, setEliminandoCuenta] = useState(false)
   const [popExito, setPopExito] = useState('')
 
   const passwordCumple = reglasPassword.every((regla) => regla.valida(passwordForm.nueva))
@@ -70,6 +73,7 @@ export default function Configuracion() {
   const nivelPassword = passwordForm.nueva ? Math.max(1, reglasFuerzaPassword.filter((regla) => regla(passwordForm.nueva)).length) : 0
   const textoNivelPassword = ['', 'Muy débil', 'Débil', 'Media', 'Buena', 'Segura'][nivelPassword]
   const desactivarListo = checksDesactivar.revision && checksDesactivar.oculto && checksDesactivar.regreso
+  const eliminarListo = checksEliminar.periodo && checksEliminar.cancelar && checksEliminar.permanente
 
   const cerrarSesion = () => {
     logout()
@@ -143,6 +147,10 @@ export default function Configuracion() {
     setErrorEliminar('')
   }
 
+  const cambiarCheckEliminar = (e) => {
+    setChecksEliminar({ ...checksEliminar, [e.target.name]: e.target.checked })
+  }
+
   const verificarPasswordEliminar = async (e) => {
     e.preventDefault()
     if (!passwordEliminar) {
@@ -162,6 +170,12 @@ export default function Configuracion() {
 
     setErrorEliminar('')
     setPasswordEliminacionValida(true)
+    setConfirmarEliminar(true)
+  }
+
+  const cerrarConfirmacionEliminar = () => {
+    if (eliminandoCuenta) return
+    setConfirmarEliminar(false)
   }
 
   const confirmarPasswordDesactivar = async (e) => {
@@ -199,6 +213,25 @@ export default function Configuracion() {
     if (!resultado.exito) {
       setErrorDesactivar(resultado.mensaje || 'Ups, algo salió mal. Inténtalo más tarde')
       setConfirmarDesactivar(false)
+      return
+    }
+
+    logout()
+    navigate('/login', { replace: true })
+  }
+
+  const eliminarCuenta = async () => {
+    if (!eliminarListo || eliminandoCuenta || !passwordEliminacionValida) return
+
+    setEliminandoCuenta(true)
+    setErrorEliminar('')
+    await esperarCargaBreve()
+    const resultado = await authService.eliminarCuenta('Eliminación solicitada por el usuario desde configuración')
+    setEliminandoCuenta(false)
+
+    if (!resultado.exito) {
+      setErrorEliminar(resultado.mensaje || 'Ups, algo salió mal. Inténtalo más tarde')
+      setConfirmarEliminar(false)
       return
     }
 
@@ -359,19 +392,31 @@ export default function Configuracion() {
               <>
                 <p className="feed-kicker">Cuenta</p>
                 <h2>Eliminar cuenta</h2>
-                <p className="detail-copy">Lamentamos que quieras irte. Si algo no funciono como esperabas, puedes desactivar la cuenta y volver despues. Eliminarla es una accion permanente.</p>
-                <p className="detail-note danger"><strong>Accion permanente:</strong> tu perfil, momentos, mensajes y preferencias quedarian marcados para eliminacion definitiva despues del periodo de seguridad.</p>
+                <p className="detail-copy">Lamentamos que quieras irte. Si algo no funciono como esperabas, puedes desactivar la cuenta y volver despues.</p>
+                <p className="detail-note danger"><strong>Antes de continuar:</strong> tu cuenta entrara en un periodo de 30 dias antes de eliminarse definitivamente.</p>
+                <div className="account-checkpoints" aria-label="Confirmaciones para eliminar cuenta">
+                  <label>
+                    <input type="checkbox" name="periodo" checked={checksEliminar.periodo} onChange={cambiarCheckEliminar} />
+                    <span>Entiendo que mi cuenta quedara programada para eliminarse en 30 dias.</span>
+                  </label>
+                  <label>
+                    <input type="checkbox" name="cancelar" checked={checksEliminar.cancelar} onChange={cambiarCheckEliminar} />
+                    <span>Entiendo que durante esos 30 dias podre cancelar la eliminacion al reingresar.</span>
+                  </label>
+                  <label>
+                    <input type="checkbox" name="permanente" checked={checksEliminar.permanente} onChange={cambiarCheckEliminar} />
+                    <span>Entiendo que despues de los 30 dias la cuenta se eliminara para siempre.</span>
+                  </label>
+                </div>
                 <form className="detail-form" onSubmit={verificarPasswordEliminar} noValidate>
                   <div className="campo">
-                    <CampoPassword invalido={Boolean(errorEliminar)} name="passwordEliminar" placeholder="Contraseña actual" aria-label="Contraseña actual" value={passwordEliminar} onChange={onPasswordEliminarChange} autoComplete="current-password" maxLength={72} disabled={verificandoEliminar || passwordEliminacionValida} />
+                    <CampoPassword invalido={Boolean(errorEliminar)} name="passwordEliminar" placeholder="Contraseña actual" aria-label="Contraseña actual" value={passwordEliminar} onChange={onPasswordEliminarChange} autoComplete="current-password" maxLength={72} disabled={verificandoEliminar || passwordEliminacionValida || !eliminarListo} />
                     {errorEliminar && <span className="campo-error">{errorEliminar}</span>}
                     {passwordEliminacionValida && <span className="campo-ayuda estado-usuario disponible">Contraseña verificada</span>}
                   </div>
-                  {!passwordEliminacionValida ? (
-                    <button disabled={verificandoEliminar || !passwordEliminar}>{verificandoEliminar ? <span className="spinner" /> : 'Confirmar contraseña'}</button>
-                  ) : (
-                    <button className="danger-btn" type="button">Eliminar cuenta definitivamente</button>
-                  )}
+                  <button className="danger-btn" disabled={verificandoEliminar || !passwordEliminar || !eliminarListo || passwordEliminacionValida}>
+                    {verificandoEliminar ? <span className="spinner" /> : 'Eliminar cuenta'}
+                  </button>
                 </form>
               </>
             )}
@@ -480,6 +525,29 @@ export default function Configuracion() {
                 </div>
               </div>
             )}
+          </section>
+        </div>
+      )}
+
+      {confirmarEliminar && (
+        <div className="modal-backdrop" role="presentation" onClick={cerrarConfirmacionEliminar}>
+          <section className="confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar eliminacion" onClick={(e) => e.stopPropagation()}>
+            <div className="deactivate-final delete-final">
+              <h2>Eliminar cuenta</h2>
+              <p>Tu cuenta quedara oculta desde ahora y entrara en un periodo de seguridad de 30 dias antes de eliminarse por completo.</p>
+              <ul>
+                <li>Durante esos 30 dias podras cancelar la eliminacion si vuelves a entrar y confirmas que quieres conservarla.</li>
+                <li>Despues de los 30 dias, la cuenta y la informacion asociada se eliminaran definitivamente.</li>
+                <li>Algunos registros minimos podrian conservarse si son necesarios por seguridad, auditoria o reportes.</li>
+              </ul>
+              {errorEliminar && <span className="campo-error">{errorEliminar}</span>}
+              <div>
+                <button className="profile-btn" type="button" onClick={cerrarConfirmacionEliminar} disabled={eliminandoCuenta}>Cancelar</button>
+                <button className="danger-btn" type="button" onClick={eliminarCuenta} disabled={eliminandoCuenta}>
+                  {eliminandoCuenta ? <span className="spinner" /> : 'Si, eliminar'}
+                </button>
+              </div>
+            </div>
           </section>
         </div>
       )}

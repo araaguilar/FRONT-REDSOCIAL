@@ -40,6 +40,10 @@ export default function RecuperarPassword() {
   const fechaDesactivacion = cuentaDesactivada?.fechaDesactivacion
     ? new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(cuentaDesactivada.fechaDesactivacion))
     : 'una fecha anterior'
+  const fechaEliminacion = cuentaDesactivada?.fechaEliminacion
+    ? new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(cuentaDesactivada.fechaEliminacion))
+    : null
+  const eliminacionPendiente = cuentaDesactivada?.estadoCuenta === 'eliminacion_pendiente'
 
   const onChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -157,10 +161,18 @@ export default function RecuperarPassword() {
               </div>
               {cuentaDesactivada && (
                 <div className="reactivar-inline">
-                  <strong>Tu cuenta está desactivada desde el {fechaDesactivacion}.</strong>
-                  <span>¿Quieres reactivarla? Te enviaremos un código para cambiar tu contraseña y volver a entrar.</span>
+                  <strong>
+                    {eliminacionPendiente
+                      ? `Tu cuenta está en proceso de eliminación${fechaEliminacion ? ` hasta el ${fechaEliminacion}` : ''}.`
+                      : `Tu cuenta está desactivada desde el ${fechaDesactivacion}.`}
+                  </strong>
+                  <span>
+                    {eliminacionPendiente
+                      ? '¿Quieres cancelar la eliminación? Te enviaremos un código para cambiar tu contraseña y conservar tu cuenta.'
+                      : '¿Quieres reactivarla? Te enviaremos un código para cambiar tu contraseña y volver a entrar.'}
+                  </span>
                   <button className="btn reactivar-inline-btn" type="button" onClick={() => solicitarCodigo(true)} disabled={cargando}>
-                    {cargando ? <span className="spinner" /> : 'Sí, enviar código'}
+                    {cargando ? <span className="spinner" /> : eliminacionPendiente ? 'Cancelar eliminación' : 'Sí, enviar código'}
                   </button>
                 </div>
               )}

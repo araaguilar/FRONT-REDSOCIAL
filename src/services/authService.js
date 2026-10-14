@@ -32,6 +32,7 @@ export const authService = {
   cambiarPasswordAutenticado: (passwordActual, nuevaPassword) => llamar(() => httpClient.post('/auth/password/cambiar', { passwordActual, nuevaPassword })),
   verificarPassword: (password) => llamar(() => httpClient.post('/auth/password/verificar', { password })),
   desactivarCuenta: (motivo) => llamar(() => httpClient.post('/auth/cuenta/desactivar', { motivo })),
+  eliminarCuenta: (motivo) => llamar(() => httpClient.post('/auth/cuenta/eliminar', { motivo })),
   registrar: (datos) => llamar(() => httpClient.post('/auth/registro', datos)),
   perfil: () => llamar(() => httpClient.get('/auth/perfil')),
   miPerfil: () => llamar(() => httpClient.get('/perfil/me')),

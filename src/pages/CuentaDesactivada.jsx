@@ -27,6 +27,10 @@ export default function CuentaDesactivada() {
   const fechaDesactivacion = datos.fechaDesactivacion
     ? new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(datos.fechaDesactivacion))
     : null
+  const fechaEliminacion = datos.fechaEliminacion
+    ? new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(datos.fechaEliminacion))
+    : null
+  const eliminacionPendiente = datos.estadoCuenta === 'eliminacion_pendiente'
 
   const reactivar = async () => {
     setCargando(true)
@@ -56,23 +60,34 @@ export default function CuentaDesactivada() {
           <span className="brand-mark">M</span>
           <strong>Moment</strong>
         </div>
-        <p className="feed-kicker">Cuenta desactivada</p>
-        <h1>Sabíamos que regresarías</h1>
+        <p className="feed-kicker">{eliminacionPendiente ? 'Eliminación programada' : 'Cuenta desactivada'}</p>
+        <h1>{eliminacionPendiente ? 'Aún estás a tiempo' : 'Sabíamos que regresarías'}</h1>
         <p>
-          Tu cuenta está pausada. Tu perfil y tus momentos no se muestran públicamente mientras permanezca desactivada.
+          {eliminacionPendiente
+            ? 'Tu cuenta está programada para eliminarse. Puedes cancelar esa eliminación y volver a Moment con tu perfil y tus momentos.'
+            : 'Tu cuenta está pausada. Tu perfil y tus momentos no se muestran públicamente mientras permanezca desactivada.'}
         </p>
-        {fechaDesactivacion && (
-          <span className="reactivation-date">Desactivada desde el {fechaDesactivacion}</span>
-        )}
+        {eliminacionPendiente && fechaEliminacion && <span className="reactivation-date">Se eliminará definitivamente el {fechaEliminacion}</span>}
+        {!eliminacionPendiente && fechaDesactivacion && <span className="reactivation-date">Desactivada desde el {fechaDesactivacion}</span>}
         <ul className="reactivation-notes">
-          <li>Al reactivarla volverás a entrar con esta misma cuenta.</li>
-          <li>Te enviaremos un aviso por correo cuando quede activa.</li>
-          <li>Si no quieres continuar, puedes volver al login sin cambiar nada.</li>
+          {eliminacionPendiente ? (
+            <>
+              <li>Al cancelar la eliminación, tu cuenta volverá a quedar activa.</li>
+              <li>La fecha de eliminación definitiva se limpiará.</li>
+              <li>Te enviaremos un aviso por correo cuando vuelva a estar activa.</li>
+            </>
+          ) : (
+            <>
+              <li>Al reactivarla volverás a entrar con esta misma cuenta.</li>
+              <li>Te enviaremos un aviso por correo cuando quede activa.</li>
+              <li>Si no quieres continuar, puedes volver al login sin cambiar nada.</li>
+            </>
+          )}
         </ul>
         {error && <span className="campo-error">{error}</span>}
         <div>
           <button className="btn" onClick={reactivar} disabled={cargando}>
-            {cargando ? <span className="spinner" /> : 'Reactivar cuenta'}
+            {cargando ? <span className="spinner" /> : eliminacionPendiente ? 'Cancelar eliminación' : 'Reactivar cuenta'}
           </button>
           <button className="reactivation-login-btn" type="button" onClick={volver} disabled={cargando}>
             Volver al login

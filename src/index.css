@@ -5454,6 +5454,10 @@ pre {
 
 .danger-btn {
   flex: 0 0 auto;
+  min-width: 132px;
+  min-height: 39px;
+  display: inline-grid;
+  place-items: center;
   padding: 10px 14px;
   border: 0;
   border-radius: 7px;

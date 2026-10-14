@@ -105,7 +105,9 @@ export default function Login() {
         sessionStorage.setItem(REACTIVAR_CUENTA_KEY, JSON.stringify({
           usuarioOEmail: form.usuarioOEmail.trim(),
           password: form.password,
+          estadoCuenta: resultado.datos?.estadoCuenta,
           fechaDesactivacion: resultado.datos?.fechaDesactivacion,
+          fechaEliminacion: resultado.datos?.fechaEliminacion,
         }))
         navigate('/cuenta-desactivada')
         return

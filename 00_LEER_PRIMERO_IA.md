@@ -56,6 +56,10 @@ La verificación de contraseña usa BCrypt en backend. No reducir el costo de BC
 
 En recuperar contraseña, una cuenta desactivada no debe mostrarse como inexistente. Primero se informa que está desactivada y desde cuándo; solo si el usuario confirma reactivarla se envía el código. Al completar el cambio de contraseña, la cuenta vuelve a quedar activa.
 
+Si recuperar contraseña detecta una cuenta con estado `eliminacion_pendiente`, no debe decir que solo está desactivada. Debe informar que está en proceso de eliminación, mostrar la fecha límite cuando exista, y plantear la acción como cancelar la eliminación mediante código y cambio de contraseña.
+
+La eliminación de cuenta no borra datos inmediatamente. El usuario debe aceptar checkpoints, validar su contraseña y confirmar en un modal final. Al confirmar, la cuenta queda inactiva con estado `eliminacion_pendiente` y una ventana de 30 días para cancelar la eliminación al reingresar. En login, ese estado debe mostrar una pantalla de rebienvenida enfocada en cancelar la eliminación, con la fecha de eliminación definitiva visible. Pasados esos 30 días, la eliminación definitiva queda reservada para un proceso programado/backend.
+
 ## Qué evitar
 
 - Cards dentro de cards sin necesidad.
