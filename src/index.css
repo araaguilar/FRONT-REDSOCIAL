@@ -3820,32 +3820,32 @@ pre {
 
 .settings-list {
   display: grid;
-  gap: 10px;
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .settings-master {
-  animation: settingsSlideIn .22s ease;
+  animation: settingsPanelIn .28s cubic-bezier(.2, .8, .2, 1);
 }
 
 .settings-master.detail-mode {
-  animation: settingsSlideIn .22s ease;
+  animation: settingsPanelIn .28s cubic-bezier(.2, .8, .2, 1);
 }
 
 .settings-layout {
-  max-width: 760px;
+  width: 100%;
+  max-width: none;
   margin-top: 16px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .settings-layout.con-detalle {
   max-width: none;
-  display: grid;
-  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
-  gap: 16px;
+  display: block;
 }
 
-.settings-row,
 .logout-section {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -3859,9 +3859,21 @@ pre {
   justify-content: space-between;
   gap: 16px;
   padding: 16px;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  border-radius: 0;
+  background: transparent;
   color: #111827;
   text-align: left;
   cursor: pointer;
+}
+
+.settings-item:last-child .settings-row {
+  border-bottom: 0;
+}
+
+.settings-item:has(.account-options.abierto) .settings-row {
+  border-bottom-color: #f1f5f9;
 }
 
 .settings-row:hover {
@@ -3906,9 +3918,10 @@ pre {
 }
 
 .account-options-inner {
-  margin: 8px 10px 6px 28px;
+  margin: 0;
   overflow: hidden;
-  border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #f1f5f9;
+  background: #fbfcfe;
 }
 
 .account-option {
@@ -3917,12 +3930,17 @@ pre {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 12px;
+  padding: 11px 16px 11px 34px;
   border: 0;
-  background: #fff;
+  border-bottom: 1px solid #eef2f7;
+  background: transparent;
   color: #111827;
   text-align: left;
   cursor: pointer;
+}
+
+.account-option:last-child {
+  border-bottom: 0;
 }
 
 .account-option:hover {
@@ -3962,6 +3980,64 @@ pre {
   font-size: 16px;
 }
 
+.settings-section-list {
+  animation: settingsPanelIn .28s cubic-bezier(.2, .8, .2, 1);
+}
+
+.settings-section-list .account-option {
+  padding: 15px 16px;
+}
+
+.account-group {
+  overflow: hidden;
+  border-top: 1px solid #f1f5f9;
+}
+
+.account-group .account-option:first-child {
+  border-top: 0;
+}
+
+.account-danger-group {
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 8px solid #f8fafc;
+  background: transparent;
+}
+
+.account-group-label {
+  display: block;
+  padding: 13px 16px 3px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.settings-section-head {
+  padding: 4px 16px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.settings-section-head h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 21px;
+}
+
+.settings-section-head span {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.settings-back-row {
+  width: fit-content;
+  margin: 14px 16px 8px;
+}
+
 .logout-section {
   display: flex;
   align-items: center;
@@ -3973,10 +4049,16 @@ pre {
 
 .settings-detail {
   min-height: 430px;
+  width: 100%;
   padding: 24px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
+  animation: settingsDetailIn .34s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.settings-detail-back {
+  margin-bottom: 18px;
 }
 
 .settings-detail h2 {
@@ -3984,6 +4066,36 @@ pre {
   color: #111827;
   font-size: 26px;
   line-height: 1.1;
+}
+
+.detail-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.detail-list div {
+  padding: 13px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.detail-list strong,
+.detail-list span {
+  display: block;
+}
+
+.detail-list strong {
+  color: #111827;
+  font-size: 13.5px;
+}
+
+.detail-list span {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
 .detail-copy {
@@ -4014,9 +4126,13 @@ pre {
   border-color: #111827;
 }
 
-.detail-form button,
+.detail-form > button,
 .warning-btn {
   justify-self: start;
+  min-width: 132px;
+  min-height: 39px;
+  display: inline-grid;
+  place-items: center;
   padding: 10px 14px;
   border: 0;
   border-radius: 7px;
@@ -4025,6 +4141,10 @@ pre {
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.detail-form .input-wrap .input.con-toggle {
+  padding-right: 40px;
 }
 
 .detail-warning {
@@ -4065,7 +4185,7 @@ pre {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
-  animation: settingsSlideIn .22s ease;
+  animation: settingsPanelIn .28s cubic-bezier(.2, .8, .2, 1) both;
 }
 
 .back-row {
@@ -4077,6 +4197,14 @@ pre {
   font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.back-row.settings-back-row {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 14px 16px 8px;
+  line-height: 1;
 }
 
 .settings-subdetail-card h3 {
@@ -5109,6 +5237,28 @@ pre {
   from {
     opacity: 0;
     transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes settingsPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes settingsDetailIn {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
   }
   to {
     opacity: 1;

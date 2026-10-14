@@ -14,7 +14,7 @@ const llamar = async (peticion) => {
     const { data } = await peticion()
     return data
   } catch (error) {
-    return { exito: false, mensaje: mensajeDeError(error) }
+    return { exito: false, mensaje: mensajeDeError(error), status: error.response?.status }
   }
 }
 
@@ -28,6 +28,7 @@ export const authService = {
   solicitarRecuperacionPassword: (email) => llamar(() => httpClient.post('/auth/recuperar-password/solicitar-codigo', { email })),
   verificarRecuperacionPassword: (email, codigo) => llamar(() => httpClient.post('/auth/recuperar-password/verificar-codigo', { email, codigo })),
   cambiarPassword: (email, recoveryToken, nuevaPassword) => llamar(() => httpClient.post('/auth/recuperar-password/cambiar', { email, recoveryToken, nuevaPassword })),
+  cambiarPasswordAutenticado: (passwordActual, nuevaPassword) => llamar(() => httpClient.post('/auth/password/cambiar', { passwordActual, nuevaPassword })),
   registrar: (datos) => llamar(() => httpClient.post('/auth/registro', datos)),
   perfil: () => llamar(() => httpClient.get('/auth/perfil')),
   miPerfil: () => llamar(() => httpClient.get('/perfil/me')),
