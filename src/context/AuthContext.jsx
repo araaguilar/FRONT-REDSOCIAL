@@ -22,6 +22,15 @@ export function AuthProvider({ children }) {
     return resultado
   }, [])
 
+  const reactivarCuenta = useCallback(async (usuarioOEmail, password) => {
+    const resultado = await authService.reactivarCuenta(usuarioOEmail, password)
+    if (resultado.exito) {
+      iniciarSesion(resultado.datos)
+      return { ...resultado, datos: tokenStorage.obtenerUsuario() }
+    }
+    return resultado
+  }, [])
+
   const refrescarPerfil = useCallback(async () => {
     if (!tokenStorage.obtener()) {
       setPerfilActual(null)
@@ -55,7 +64,7 @@ export function AuthProvider({ children }) {
   const cancelarCodigoEmail = useCallback((email) => authService.cancelarCodigoEmail(email), [])
   const verificarEmailDisponible = useCallback((email) => authService.verificarEmailDisponible(email), [])
   const verificarUsuarioDisponible = useCallback((nombreUsuario) => authService.verificarUsuarioDisponible(nombreUsuario), [])
-  const solicitarRecuperacionPassword = useCallback((email) => authService.solicitarRecuperacionPassword(email), [])
+  const solicitarRecuperacionPassword = useCallback((email, confirmarReactivacion = false) => authService.solicitarRecuperacionPassword(email, confirmarReactivacion), [])
   const verificarRecuperacionPassword = useCallback((email, codigo) => authService.verificarRecuperacionPassword(email, codigo), [])
   const cambiarPassword = useCallback((email, recoveryToken, nuevaPassword) => authService.cambiarPassword(email, recoveryToken, nuevaPassword), [])
 
@@ -72,7 +81,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ usuario, perfilActual, refrescarPerfil, estaAutenticado: !!usuario, login, registrar, solicitarCodigoEmail, verificarCodigoEmail, cancelarCodigoEmail, verificarEmailDisponible, verificarUsuarioDisponible, solicitarRecuperacionPassword, verificarRecuperacionPassword, cambiarPassword, seleccionarRolActivo, logout }}>
+    <AuthContext.Provider value={{ usuario, perfilActual, refrescarPerfil, estaAutenticado: !!usuario, login, reactivarCuenta, registrar, solicitarCodigoEmail, verificarCodigoEmail, cancelarCodigoEmail, verificarEmailDisponible, verificarUsuarioDisponible, solicitarRecuperacionPassword, verificarRecuperacionPassword, cambiarPassword, seleccionarRolActivo, logout }}>
       {children}
     </AuthContext.Provider>
   )

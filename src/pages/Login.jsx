@@ -1,11 +1,26 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import CampoPassword from '../components/CampoPassword'
 import { necesitaSelectorDeEntrada, rutaInicialPorRol } from '../utils/rutasPorRol'
 
 const RECORDAR_USUARIO_KEY = 'moment_recordar_usuario'
+export const REACTIVAR_CUENTA_KEY = 'moment_reactivar_cuenta'
 const dominiosEmail = ['gmail.com', 'hotmail.com']
+const loginImagenes = [
+  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1536599018102-9f803c140fc1?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1400&q=80',
+]
+
+const siguienteIntervaloImagen = () => Math.floor(45000 + Math.random() * 135000)
 
 export default function Login() {
   const { login, estaAutenticado, usuario } = useAuth()
@@ -20,6 +35,24 @@ export default function Login() {
   const [intentoFallido, setIntentoFallido] = useState(false)
   const [entrandoARegistro, setEntrandoARegistro] = useState(false)
   const [entrandoARecuperar, setEntrandoARecuperar] = useState(false)
+  const [imagenActiva, setImagenActiva] = useState(() => Math.floor(Math.random() * loginImagenes.length))
+
+  useEffect(() => {
+    let timer
+    const programarCambio = () => {
+      timer = window.setTimeout(() => {
+        setImagenActiva((actual) => {
+          let siguiente = Math.floor(Math.random() * loginImagenes.length)
+          if (siguiente === actual) siguiente = (siguiente + 1) % loginImagenes.length
+          return siguiente
+        })
+        programarCambio()
+      }, siguienteIntervaloImagen())
+    }
+
+    programarCambio()
+    return () => window.clearTimeout(timer)
+  }, [])
 
   if (estaAutenticado) {
     if (necesitaSelectorDeEntrada(usuario)) return <Navigate to="/seleccionar-entrada" replace />
@@ -68,6 +101,16 @@ export default function Login() {
       else navigate(rutaInicialPorRol(resultado.datos?.rolActivo ?? resultado.datos?.rol ?? 'usuario'))
     }
     else {
+      if (resultado.mensaje === 'Cuenta desactivada') {
+        sessionStorage.setItem(REACTIVAR_CUENTA_KEY, JSON.stringify({
+          usuarioOEmail: form.usuarioOEmail.trim(),
+          password: form.password,
+          fechaDesactivacion: resultado.datos?.fechaDesactivacion,
+        }))
+        navigate('/cuenta-desactivada')
+        return
+      }
+
       setIntentoFallido(true)
       const mensaje = resultado.mensaje === 'Ups, algo salió mal. Inténtalo más tarde'
         ? resultado.mensaje
@@ -91,7 +134,7 @@ export default function Login() {
   return (
     <main className={`auth login-layout${entrandoARegistro ? ' auth-to-register' : ''}${entrandoARecuperar ? ' auth-to-recover' : ''}`}>
       <section className="login-visual" aria-hidden="true">
-        <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=80" alt="" />
+        <img key={loginImagenes[imagenActiva]} src={loginImagenes[imagenActiva]} alt="" />
         <div>
           <span>Moment</span>
           <h2>Comparte lo que esta pasando en tu dia.</h2>

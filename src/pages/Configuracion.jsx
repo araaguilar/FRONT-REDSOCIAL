@@ -40,6 +40,7 @@ const accionesCuenta = [
 ]
 
 const todasOpcionesCuenta = [...opcionesCuenta, ...accionesCuenta]
+const esperarCargaBreve = () => new Promise((resolve) => window.setTimeout(resolve, 500 + Math.random() * 500))
 
 export default function Configuracion() {
   const { logout } = useAuth()
@@ -50,6 +51,17 @@ export default function Configuracion() {
   const [passwordForm, setPasswordForm] = useState({ actual: '', nueva: '', confirmar: '' })
   const [erroresPassword, setErroresPassword] = useState({})
   const [guardandoPassword, setGuardandoPassword] = useState(false)
+  const [checksDesactivar, setChecksDesactivar] = useState({ revision: false, oculto: false, regreso: false })
+  const [confirmarDesactivar, setConfirmarDesactivar] = useState(false)
+  const [desactivandoCuenta, setDesactivandoCuenta] = useState(false)
+  const [errorDesactivar, setErrorDesactivar] = useState('')
+  const [passwordDesactivar, setPasswordDesactivar] = useState('')
+  const [errorPasswordDesactivar, setErrorPasswordDesactivar] = useState('')
+  const [passwordDesactivarValida, setPasswordDesactivarValida] = useState(false)
+  const [passwordEliminar, setPasswordEliminar] = useState('')
+  const [errorEliminar, setErrorEliminar] = useState('')
+  const [verificandoEliminar, setVerificandoEliminar] = useState(false)
+  const [passwordEliminacionValida, setPasswordEliminacionValida] = useState(false)
   const [popExito, setPopExito] = useState('')
 
   const passwordCumple = reglasPassword.every((regla) => regla.valida(passwordForm.nueva))
@@ -57,6 +69,7 @@ export default function Configuracion() {
   const passwordLista = passwordForm.actual !== '' && passwordCumple && passwordForm.confirmar !== '' && passwordForm.nueva === passwordForm.confirmar
   const nivelPassword = passwordForm.nueva ? Math.max(1, reglasFuerzaPassword.filter((regla) => regla(passwordForm.nueva)).length) : 0
   const textoNivelPassword = ['', 'Muy débil', 'Débil', 'Media', 'Buena', 'Segura'][nivelPassword]
+  const desactivarListo = checksDesactivar.revision && checksDesactivar.oculto && checksDesactivar.regreso
 
   const cerrarSesion = () => {
     logout()
@@ -97,6 +110,100 @@ export default function Configuracion() {
     setErroresPassword({})
     setPopExito('Contraseña actualizada')
     window.setTimeout(() => setPopExito(''), 1800)
+  }
+
+  const cambiarCheckDesactivar = (e) => {
+    setChecksDesactivar({ ...checksDesactivar, [e.target.name]: e.target.checked })
+  }
+
+  const abrirConfirmacionDesactivar = () => {
+    setPasswordDesactivar('')
+    setErrorPasswordDesactivar('')
+    setPasswordDesactivarValida(false)
+    setConfirmarDesactivar(true)
+  }
+
+  const cerrarConfirmacionDesactivar = () => {
+    if (desactivandoCuenta) return
+    setConfirmarDesactivar(false)
+    setPasswordDesactivar('')
+    setErrorPasswordDesactivar('')
+    setPasswordDesactivarValida(false)
+  }
+
+  const onPasswordDesactivarChange = (e) => {
+    setPasswordDesactivar(e.target.value)
+    setErrorPasswordDesactivar('')
+    setPasswordDesactivarValida(false)
+  }
+
+  const onPasswordEliminarChange = (e) => {
+    setPasswordEliminar(e.target.value)
+    setPasswordEliminacionValida(false)
+    setErrorEliminar('')
+  }
+
+  const verificarPasswordEliminar = async (e) => {
+    e.preventDefault()
+    if (!passwordEliminar) {
+      setErrorEliminar('La contraseña es obligatoria')
+      return
+    }
+
+    setVerificandoEliminar(true)
+    const resultado = await authService.verificarPassword(passwordEliminar)
+    setVerificandoEliminar(false)
+
+    if (!resultado.exito) {
+      setErrorEliminar(resultado.status ? 'Contraseña incorrecta' : 'Ups, algo salió mal. Inténtalo más tarde')
+      setPasswordEliminacionValida(false)
+      return
+    }
+
+    setErrorEliminar('')
+    setPasswordEliminacionValida(true)
+  }
+
+  const confirmarPasswordDesactivar = async (e) => {
+    e?.preventDefault()
+    if (!desactivarListo || desactivandoCuenta) return
+    if (!passwordDesactivar) {
+      setErrorPasswordDesactivar('La contraseña es obligatoria')
+      return
+    }
+
+    setDesactivandoCuenta(true)
+    setErrorDesactivar('')
+    setErrorPasswordDesactivar('')
+
+    const passwordValida = await authService.verificarPassword(passwordDesactivar)
+    if (!passwordValida.exito) {
+      setDesactivandoCuenta(false)
+      setErrorPasswordDesactivar(passwordValida.status ? 'Contraseña incorrecta' : 'Ups, algo salió mal. Inténtalo más tarde')
+      return
+    }
+
+    setDesactivandoCuenta(false)
+    setPasswordDesactivarValida(true)
+  }
+
+  const desactivarCuenta = async () => {
+    if (!desactivarListo || desactivandoCuenta || !passwordDesactivarValida) return
+
+    setDesactivandoCuenta(true)
+    setErrorDesactivar('')
+    await esperarCargaBreve()
+    const resultado = await authService.desactivarCuenta('Desactivación solicitada por el usuario desde configuración')
+    setDesactivandoCuenta(false)
+
+    if (!resultado.exito) {
+      setErrorDesactivar(resultado.mensaje || 'Ups, algo salió mal. Inténtalo más tarde')
+      setConfirmarDesactivar(false)
+      return
+    }
+
+    logout()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -226,11 +333,25 @@ export default function Configuracion() {
                 <p className="feed-kicker">Cuenta</p>
                 <h2>Desactivar cuenta</h2>
                 <p className="detail-copy">Tu perfil quedaria oculto temporalmente y podrias volver cuando inicies sesion de nuevo.</p>
-                <div className="detail-warning">
-                  <strong>Antes de continuar</strong>
-                  <span>Tus momentos no se borran, solo dejan de estar visibles.</span>
+                <p className="detail-note warning"><strong>Antes de continuar:</strong> tu cuenta aun puede ser revisada por seguridad y moderacion si existen reportes pendientes.</p>
+                <div className="account-checkpoints" aria-label="Confirmaciones para desactivar cuenta">
+                  <label>
+                    <input type="checkbox" name="revision" checked={checksDesactivar.revision} onChange={cambiarCheckDesactivar} />
+                    <span>Entiendo que mi cuenta puede seguir en revision por seguridad.</span>
+                  </label>
+                  <label>
+                    <input type="checkbox" name="oculto" checked={checksDesactivar.oculto} onChange={cambiarCheckDesactivar} />
+                    <span>Entiendo que mi perfil y momentos dejaran de estar visibles.</span>
+                  </label>
+                  <label>
+                    <input type="checkbox" name="regreso" checked={checksDesactivar.regreso} onChange={cambiarCheckDesactivar} />
+                    <span>Entiendo que podre volver iniciando sesion nuevamente.</span>
+                  </label>
                 </div>
-                <button className="warning-btn">Desactivar cuenta</button>
+                {errorDesactivar && <span className="campo-error">{errorDesactivar}</span>}
+                <button className="warning-btn" onClick={abrirConfirmacionDesactivar} disabled={!desactivarListo || desactivandoCuenta}>
+                  Desactivar cuenta
+                </button>
               </>
             )}
 
@@ -238,12 +359,20 @@ export default function Configuracion() {
               <>
                 <p className="feed-kicker">Cuenta</p>
                 <h2>Eliminar cuenta</h2>
-                <p className="detail-copy">Esta accion eliminaria tu perfil, momentos, mensajes y preferencias de forma permanente.</p>
-                <div className="detail-warning danger">
-                  <strong>Accion permanente</strong>
-                  <span>Mas adelante agregaremos una confirmacion fuerte antes de permitir esto.</span>
-                </div>
-                <button className="danger-btn">Eliminar cuenta</button>
+                <p className="detail-copy">Lamentamos que quieras irte. Si algo no funciono como esperabas, puedes desactivar la cuenta y volver despues. Eliminarla es una accion permanente.</p>
+                <p className="detail-note danger"><strong>Accion permanente:</strong> tu perfil, momentos, mensajes y preferencias quedarian marcados para eliminacion definitiva despues del periodo de seguridad.</p>
+                <form className="detail-form" onSubmit={verificarPasswordEliminar} noValidate>
+                  <div className="campo">
+                    <CampoPassword invalido={Boolean(errorEliminar)} name="passwordEliminar" placeholder="Contraseña actual" aria-label="Contraseña actual" value={passwordEliminar} onChange={onPasswordEliminarChange} autoComplete="current-password" maxLength={72} disabled={verificandoEliminar || passwordEliminacionValida} />
+                    {errorEliminar && <span className="campo-error">{errorEliminar}</span>}
+                    {passwordEliminacionValida && <span className="campo-ayuda estado-usuario disponible">Contraseña verificada</span>}
+                  </div>
+                  {!passwordEliminacionValida ? (
+                    <button disabled={verificandoEliminar || !passwordEliminar}>{verificandoEliminar ? <span className="spinner" /> : 'Confirmar contraseña'}</button>
+                  ) : (
+                    <button className="danger-btn" type="button">Eliminar cuenta definitivamente</button>
+                  )}
+                </form>
               </>
             )}
 
@@ -309,6 +438,48 @@ export default function Configuracion() {
               <button className="profile-btn" onClick={() => setConfirmarSalida(false)}>Cancelar</button>
               <button className="danger-btn" onClick={cerrarSesion}>Si, cerrar sesion</button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {confirmarDesactivar && (
+        <div className="modal-backdrop" role="presentation" onClick={cerrarConfirmacionDesactivar}>
+          <section className="confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar desactivacion" onClick={(e) => e.stopPropagation()}>
+            {!passwordDesactivarValida ? (
+              <>
+                <h2>Desactivar cuenta</h2>
+                <p>¿Seguro que quieres desactivar tu cuenta? Confirma tu contraseña para continuar con el último paso.</p>
+                <form className="confirm-form" onSubmit={confirmarPasswordDesactivar} noValidate>
+                  <div className="campo">
+                    <CampoPassword invalido={Boolean(errorPasswordDesactivar)} name="passwordDesactivar" placeholder="Contraseña actual" aria-label="Contraseña actual" value={passwordDesactivar} onChange={onPasswordDesactivarChange} autoComplete="current-password" maxLength={72} disabled={desactivandoCuenta} />
+                    {errorPasswordDesactivar && <span className="campo-error">{errorPasswordDesactivar}</span>}
+                  </div>
+                  <div>
+                    <button className="profile-btn" type="button" onClick={cerrarConfirmacionDesactivar} disabled={desactivandoCuenta}>Cancelar</button>
+                    <button className="warning-btn" disabled={desactivandoCuenta || !passwordDesactivar}>
+                      {desactivandoCuenta ? <span className="spinner" /> : 'Continuar'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="deactivate-final">
+                <h2>Te vamos a extrañar</h2>
+                <p>Tu cuenta quedará pausada. Tu perfil, tus momentos y tu actividad dejarán de mostrarse públicamente mientras esté desactivada.</p>
+                <ul>
+                  <li>Podrás volver iniciando sesión o recuperando tu contraseña.</li>
+                  <li>Algunos datos pueden conservarse temporalmente por seguridad, reportes o auditoría.</li>
+                  <li>No se eliminará tu cuenta de forma definitiva desde esta acción.</li>
+                </ul>
+                {errorDesactivar && <span className="campo-error">{errorDesactivar}</span>}
+                <div>
+                  <button className="profile-btn" type="button" onClick={cerrarConfirmacionDesactivar} disabled={desactivandoCuenta}>Cancelar</button>
+                  <button className="warning-btn" type="button" onClick={desactivarCuenta} disabled={desactivandoCuenta}>
+                    {desactivandoCuenta ? <span className="spinner" /> : 'Desactivar'}
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       )}

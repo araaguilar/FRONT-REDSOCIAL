@@ -18,6 +18,8 @@ Reglas actuales:
 - Registro a login: slide contrario.
 - Login a recuperar contraseña: slide suave hacia arriba.
 - Recuperar contraseña a login: regreso animado, no navegación seca.
+- Login visual: la imagen lateral funciona como carrusel aleatorio. No usar intervalo fijo visible; debe cambiar en tiempos variables menores a 3 minutos.
+- Cuenta desactivada: si el usuario vuelve con credenciales correctas, mostrar una pantalla cálida de bienvenida y reactivación, no un error genérico.
 - Crear momento: el modal aparece subiendo desde abajo con fade.
 - Mi perfil: la página y sus bloques entran con fade y subida ligera.
 - Configuración: las vistas internas entran con slide/fade suave. Esta animación debe reutilizarse para acciones como cambiar contraseña, mis inicios de sesión, desactivar cuenta y eliminar cuenta.
@@ -51,6 +53,8 @@ En acciones sensibles como cambio de contraseña, credenciales incorrectas o val
 Los códigos de verificación de 6 dígitos usan cuadros individuales. Al validar, los cuadros cambian secuencialmente a verde o rojo, pero sin moverse ni escalar para evitar saltos visuales.
 
 La verificación de contraseña usa BCrypt en backend. No reducir el costo de BCrypt solo para que se sienta más rápido; esa lentitud protege contra fuerza bruta. Si una acción tarda, mejorar la experiencia con loaders estables y mensajes claros.
+
+En recuperar contraseña, una cuenta desactivada no debe mostrarse como inexistente. Primero se informa que está desactivada y desde cuándo; solo si el usuario confirma reactivarla se envía el código. Al completar el cambio de contraseña, la cuenta vuelve a quedar activa.
 
 ## Qué evitar
 

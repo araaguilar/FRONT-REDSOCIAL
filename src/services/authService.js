@@ -14,21 +14,24 @@ const llamar = async (peticion) => {
     const { data } = await peticion()
     return data
   } catch (error) {
-    return { exito: false, mensaje: mensajeDeError(error), status: error.response?.status }
+    return { exito: false, mensaje: mensajeDeError(error), datos: error.response?.data?.datos, status: error.response?.status }
   }
 }
 
 export const authService = {
   login: (usuarioOEmail, password) => llamar(() => httpClient.post('/auth/login', { usuarioOEmail, password })),
+  reactivarCuenta: (usuarioOEmail, password) => llamar(() => httpClient.post('/auth/cuenta/reactivar', { usuarioOEmail, password })),
   solicitarCodigoEmail: (email) => llamar(() => httpClient.post('/auth/registro/solicitar-codigo', { email })),
   verificarCodigoEmail: (email, codigo) => llamar(() => httpClient.post('/auth/registro/verificar-codigo', { email, codigo })),
   cancelarCodigoEmail: (email) => llamar(() => httpClient.post('/auth/registro/cancelar-codigo', { email })),
   verificarEmailDisponible: (email) => llamar(() => httpClient.get('/auth/registro/email-disponible', { params: { email } })),
   verificarUsuarioDisponible: (nombreUsuario) => llamar(() => httpClient.get(`/auth/registro/usuario-disponible/${encodeURIComponent(nombreUsuario)}`)),
-  solicitarRecuperacionPassword: (email) => llamar(() => httpClient.post('/auth/recuperar-password/solicitar-codigo', { email })),
+  solicitarRecuperacionPassword: (email, confirmarReactivacion = false) => llamar(() => httpClient.post('/auth/recuperar-password/solicitar-codigo', { email, confirmarReactivacion })),
   verificarRecuperacionPassword: (email, codigo) => llamar(() => httpClient.post('/auth/recuperar-password/verificar-codigo', { email, codigo })),
   cambiarPassword: (email, recoveryToken, nuevaPassword) => llamar(() => httpClient.post('/auth/recuperar-password/cambiar', { email, recoveryToken, nuevaPassword })),
   cambiarPasswordAutenticado: (passwordActual, nuevaPassword) => llamar(() => httpClient.post('/auth/password/cambiar', { passwordActual, nuevaPassword })),
+  verificarPassword: (password) => llamar(() => httpClient.post('/auth/password/verificar', { password })),
+  desactivarCuenta: (motivo) => llamar(() => httpClient.post('/auth/cuenta/desactivar', { motivo })),
   registrar: (datos) => llamar(() => httpClient.post('/auth/registro', datos)),
   perfil: () => llamar(() => httpClient.get('/auth/perfil')),
   miPerfil: () => llamar(() => httpClient.get('/perfil/me')),

@@ -29,6 +29,7 @@ export default function RecuperarPassword() {
   const [cargando, setCargando] = useState(false)
   const [completado, setCompletado] = useState(false)
   const [volviendoALogin, setVolviendoALogin] = useState(false)
+  const [cuentaDesactivada, setCuentaDesactivada] = useState(null)
 
   const passwordCumple = reglasPassword.every((regla) => regla.valida(form.password))
   const noCoinciden = form.confirmar !== '' && form.password !== form.confirmar
@@ -36,10 +37,14 @@ export default function RecuperarPassword() {
   const nivelPassword = form.password ? Math.max(1, reglasFuerzaPassword.filter((regla) => regla(form.password)).length) : 0
   const textoNivelPassword = ['', 'Muy débil', 'Débil', 'Media', 'Buena', 'Segura'][nivelPassword]
   const bloquearPortapapeles = (e) => e.preventDefault()
+  const fechaDesactivacion = cuentaDesactivada?.fechaDesactivacion
+    ? new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(cuentaDesactivada.fechaDesactivacion))
+    : 'una fecha anterior'
 
   const onChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
     setErrores(({ [e.target.name]: _, general: __, ...resto }) => resto)
+    if (e.target.name === 'email') setCuentaDesactivada(null)
   }
 
   const alternarDominioEmail = (e) => {
@@ -82,14 +87,19 @@ export default function RecuperarPassword() {
     if (codigo.length === 6) verificarCodigo(codigo)
   }
 
-  const solicitarCodigo = async () => {
+  const solicitarCodigo = async (confirmarReactivacion = false) => {
     const email = form.email.trim()
     if (!email) return setErrores({ email: 'El correo es obligatorio' })
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setErrores({ email: 'Ingresa un correo válido' })
     setCargando(true)
-    const resultado = await solicitarRecuperacionPassword(email)
+    const resultado = await solicitarRecuperacionPassword(email, confirmarReactivacion)
     setCargando(false)
     if (!resultado.exito) return setErrores({ email: resultado.mensaje })
+    if (resultado.datos?.cuentaDesactivada) {
+      setCuentaDesactivada(resultado.datos)
+      return
+    }
+    setCuentaDesactivada(null)
     setPaso(2)
   }
 
@@ -145,7 +155,18 @@ export default function RecuperarPassword() {
                 <input className={`input${errores.email ? ' invalido' : ''}`} name="email" type="email" placeholder="Correo electrónico" aria-label="Correo electrónico" value={form.email} onChange={onChange} onKeyDown={alternarDominioEmail} autoComplete="email" maxLength={100} disabled={cargando} />
                 {errores.email && <span className="campo-error">{errores.email}</span>}
               </div>
-              <button className="btn" disabled={cargando}>{cargando ? <span className="spinner" /> : 'Enviar código'}</button>
+              {cuentaDesactivada && (
+                <div className="reactivar-inline">
+                  <strong>Tu cuenta está desactivada desde el {fechaDesactivacion}.</strong>
+                  <span>¿Quieres reactivarla? Te enviaremos un código para cambiar tu contraseña y volver a entrar.</span>
+                  <button className="btn reactivar-inline-btn" type="button" onClick={() => solicitarCodigo(true)} disabled={cargando}>
+                    {cargando ? <span className="spinner" /> : 'Sí, enviar código'}
+                  </button>
+                </div>
+              )}
+              {!cuentaDesactivada && (
+                <button className="btn" disabled={cargando}>{cargando ? <span className="spinner" /> : 'Enviar código'}</button>
+              )}
             </form>
           )}
 
@@ -204,7 +225,7 @@ export default function RecuperarPassword() {
         <button className="success-pop" onClick={() => navigate('/login', { replace: true })}>
           <span>➜</span>
           <strong>Contraseña actualizada</strong>
-          <small>Te llevaremos al login en un momento</small>
+          <small>Tu cuenta queda lista para volver a entrar</small>
         </button>
       )}
     </main>
