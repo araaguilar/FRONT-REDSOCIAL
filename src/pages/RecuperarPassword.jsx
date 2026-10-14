@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import CampoPassword from '../components/CampoPassword'
 import { useAuth } from '../context/AuthContext'
 
@@ -28,6 +28,7 @@ export default function RecuperarPassword() {
   const [errores, setErrores] = useState({})
   const [cargando, setCargando] = useState(false)
   const [completado, setCompletado] = useState(false)
+  const [volviendoALogin, setVolviendoALogin] = useState(false)
 
   const passwordCumple = reglasPassword.every((regla) => regla.valida(form.password))
   const noCoinciden = form.confirmar !== '' && form.password !== form.confirmar
@@ -119,8 +120,14 @@ export default function RecuperarPassword() {
     window.setTimeout(() => navigate('/login', { replace: true }), 1700)
   }
 
+  const irALogin = () => {
+    if (volviendoALogin || cargando) return
+    setVolviendoALogin(true)
+    window.setTimeout(() => navigate('/login'), 520)
+  }
+
   return (
-    <main className="auth">
+    <main className={`auth auth-recover-page${volviendoALogin ? ' auth-to-login' : ''}`}>
       {!completado && (
         <div className="card">
           <div className="auth-brand"><span className="brand-mark">M</span><strong>Moment</strong></div>
@@ -185,7 +192,11 @@ export default function RecuperarPassword() {
           )}
 
           <div className="divisor" />
-          <p className="pie"><Link to="/login">Volver al login</Link></p>
+          <p className="pie">
+            <button className="auth-link-button" type="button" onClick={irALogin} disabled={volviendoALogin || cargando}>
+              Volver al login
+            </button>
+          </p>
         </div>
       )}
 

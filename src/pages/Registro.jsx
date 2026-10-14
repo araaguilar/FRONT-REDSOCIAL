@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import CampoPassword from '../components/CampoPassword'
 
@@ -56,6 +56,7 @@ export default function Registro() {
   const [estadoUsuario, setEstadoUsuario] = useState('idle')
   const [correoVerificado, setCorreoVerificado] = useState(false)
   const [cuentaCreada, setCuentaCreada] = useState(false)
+  const [volviendoALogin, setVolviendoALogin] = useState(false)
   const codigoRefs = useRef([])
 
   useEffect(() => {
@@ -335,15 +336,21 @@ export default function Registro() {
   }[estadoUsuario]
 
   const textoEstadoEmail = {
-    idle: 'Escribe tu correo.',
+    idle: '* Escribe tu correo.',
     verificando: 'Comprobando disponibilidad...',
     disponible: 'Correo disponible',
     ocupado: 'Correo no disponible',
     invalido: 'Ingresa un correo válido',
   }[estadoEmail]
 
+  const irALogin = () => {
+    if (volviendoALogin || cargando) return
+    setVolviendoALogin(true)
+    window.setTimeout(() => navigate('/login'), 560)
+  }
+
   return (
-    <main className="auth">
+    <main className={`auth auth-register-page${volviendoALogin ? ' auth-to-login' : ''}`}>
       {!cuentaCreada && (
         <div className="card">
           <div className="auth-brand">
@@ -495,7 +502,12 @@ export default function Registro() {
           {paso < 3 && (
             <>
               <div className="divisor" />
-              <p className="pie">¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link></p>
+              <p className="pie">
+                ¿Ya tienes cuenta?{' '}
+                <button className="auth-link-button" type="button" onClick={irALogin} disabled={volviendoALogin || cargando}>
+                  Inicia sesión
+                </button>
+              </p>
             </>
           )}
         </div>

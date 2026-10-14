@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 const apiBaseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5079/api').replace(/\/api\/?$/, '')
@@ -18,10 +18,18 @@ const herramientas = [
   { icono: '✉', texto: 'Mensajes', ruta: '/mensajes' },
 ]
 
+const SIDEBAR_KEY_BASE = 'moment_sidebar_contraido'
+
 export default function AppSidebar({ activo = 'Inicio' }) {
   const navigate = useNavigate()
   const { usuario, perfilActual } = useAuth()
-  const [sidebarContraido, setSidebarContraido] = useState(false)
+  const sidebarStorageKey = useMemo(() => (
+    `${SIDEBAR_KEY_BASE}_${usuario?.idUsuario ?? usuario?.nombreUsuario ?? 'anon'}`
+  ), [usuario?.idUsuario, usuario?.nombreUsuario])
+  const [sidebarContraido, setSidebarContraido] = useState(() => {
+    const guardado = localStorage.getItem(SIDEBAR_KEY_BASE)
+    return guardado === 'true'
+  })
   const nombre = perfilActual?.nombrePerfil || usuario?.nombrePerfil || usuario?.nombreUsuario || usuario?.usuario || 'Raul'
   const nombreUsuario = perfilActual?.nombreUsuario || usuario?.nombreUsuario || usuario?.usuario || nombre
   const fotoPerfilUrl = normalizarMediaUrl(perfilActual?.fotoPerfilUrl)
@@ -35,6 +43,21 @@ export default function AppSidebar({ activo = 'Inicio' }) {
     navigate('/inicio?crear=1')
   }
 
+  useEffect(() => {
+    const guardadoUsuario = localStorage.getItem(sidebarStorageKey)
+    const guardadoGeneral = localStorage.getItem(SIDEBAR_KEY_BASE)
+    setSidebarContraido((guardadoUsuario ?? guardadoGeneral) === 'true')
+  }, [sidebarStorageKey])
+
+  const alternarSidebar = () => {
+    setSidebarContraido((valor) => {
+      const siguiente = !valor
+      localStorage.setItem(sidebarStorageKey, String(siguiente))
+      localStorage.setItem(SIDEBAR_KEY_BASE, String(siguiente))
+      return siguiente
+    })
+  }
+
   return (
     <aside className={`sidebar${sidebarContraido ? ' contraido' : ''}`}>
       <div>
@@ -45,7 +68,7 @@ export default function AppSidebar({ activo = 'Inicio' }) {
           </Link>
           <button
             className="sidebar-toggle"
-            onClick={() => setSidebarContraido((valor) => !valor)}
+            onClick={alternarSidebar}
             aria-label={sidebarContraido ? 'Expandir sidebar' : 'Contraer sidebar'}
           >
             {sidebarContraido ? '›' : '‹'}

@@ -86,13 +86,25 @@ export default function InicioPublico() {
 
         <div className="post-list">
           {cargando && (
-            <article className="post-card feed-loading-card">
-              <div className="skeleton avatar" />
-              <div>
+            Array.from({ length: 2 }).map((_, index) => (
+              <article className="post-card feed-loading-card full" key={index}>
+                <div className="feed-loading-head">
+                  <div className="skeleton avatar" />
+                  <div>
+                    <div className="skeleton line wide" />
+                    <div className="skeleton line small" />
+                  </div>
+                </div>
+                <div className="skeleton-moment large" />
+                <div className="feed-loading-actions">
+                  <div className="skeleton dot" />
+                  <div className="skeleton dot" />
+                  <div className="skeleton dot" />
+                </div>
                 <div className="skeleton line wide" />
-                <div className="skeleton-moment" />
-              </div>
-            </article>
+                <div className="skeleton line medium" />
+              </article>
+            ))
           )}
 
           {!cargando && publicaciones.length === 0 && (

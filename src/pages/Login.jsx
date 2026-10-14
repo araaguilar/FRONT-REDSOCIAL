@@ -18,6 +18,8 @@ export default function Login() {
   const [errores, setErrores] = useState({})
   const [cargando, setCargando] = useState(false)
   const [intentoFallido, setIntentoFallido] = useState(false)
+  const [entrandoARegistro, setEntrandoARegistro] = useState(false)
+  const [entrandoARecuperar, setEntrandoARecuperar] = useState(false)
 
   if (estaAutenticado) {
     if (necesitaSelectorDeEntrada(usuario)) return <Navigate to="/seleccionar-entrada" replace />
@@ -74,8 +76,20 @@ export default function Login() {
     }
   }
 
+  const irARegistro = () => {
+    if (entrandoARegistro || entrandoARecuperar || cargando) return
+    setEntrandoARegistro(true)
+    window.setTimeout(() => navigate('/registro'), 520)
+  }
+
+  const irARecuperarPassword = () => {
+    if (entrandoARegistro || entrandoARecuperar || cargando) return
+    setEntrandoARecuperar(true)
+    window.setTimeout(() => navigate('/recuperar-password'), 520)
+  }
+
   return (
-    <main className="auth login-layout">
+    <main className={`auth login-layout${entrandoARegistro ? ' auth-to-register' : ''}${entrandoARecuperar ? ' auth-to-recover' : ''}`}>
       <section className="login-visual" aria-hidden="true">
         <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=80" alt="" />
         <div>
@@ -125,7 +139,9 @@ export default function Login() {
                   />
                   <span>Recordar correo</span>
                 </label>
-                <Link to="/recuperar-password">Olvidé mi contraseña</Link>
+                <button className="auth-link-button" type="button" onClick={irARecuperarPassword} disabled={entrandoARegistro || entrandoARecuperar || cargando}>
+                  Olvidé mi contraseña
+                </button>
               </div>
 
               <button className="btn" disabled={cargando}>
@@ -134,7 +150,12 @@ export default function Login() {
             </form>
 
             <div className="divisor" />
-            <p className="pie">¿No tienes cuenta? <Link to="/registro">Regístrate</Link></p>
+            <p className="pie">
+              ¿No tienes cuenta?{' '}
+              <button className="auth-link-button" type="button" onClick={irARegistro} disabled={entrandoARegistro || entrandoARecuperar || cargando}>
+                Regístrate
+              </button>
+            </p>
           </div>
 
           <footer className="auth-footer">

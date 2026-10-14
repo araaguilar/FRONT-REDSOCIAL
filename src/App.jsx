@@ -11,6 +11,7 @@ import InicioPublico from './pages/InicioPublico'
 import Inicio from './pages/Inicio'
 import Perfil from './pages/Perfil'
 import PerfilPublico from './pages/PerfilPublico'
+import RelacionesPerfil from './pages/RelacionesPerfil'
 import EditarPerfil from './pages/EditarPerfil'
 import Mensajes from './pages/Mensajes'
 import Favoritos from './pages/Favoritos'
@@ -33,6 +34,8 @@ export default function App() {
             <Route path="/inicio" element={<Inicio />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/perfil/editar" element={<EditarPerfil />} />
+            <Route path="/perfil/:idUsuario/seguidores" element={<RelacionesPerfil tipo="seguidores" />} />
+            <Route path="/perfil/:idUsuario/seguidos" element={<RelacionesPerfil tipo="seguidos" />} />
             <Route path="/perfil/:nombreUsuario" element={<PerfilPublico />} />
             <Route path="/mensajes" element={<Mensajes />} />
             <Route path="/favoritos" element={<Favoritos />} />

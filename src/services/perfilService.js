@@ -19,4 +19,6 @@ const llamar = async (peticion) => {
 export const perfilService = {
   publico: (nombreUsuario) => llamar(() => httpClient.get(`/perfil/${encodeURIComponent(nombreUsuario)}`)),
   alternarSeguimiento: (idUsuario) => llamar(() => httpClient.post(`/perfil/${idUsuario}/seguimiento`)),
+  seguidores: (idUsuario, pagina = 1) => llamar(() => httpClient.get(`/perfil/${idUsuario}/seguidores`, { params: { pagina } })),
+  seguidos: (idUsuario, pagina = 1) => llamar(() => httpClient.get(`/perfil/${idUsuario}/seguidos`, { params: { pagina } })),
 }

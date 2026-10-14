@@ -291,14 +291,14 @@ export default function Perfil() {
               </div>
 
               <div className="profile-stats" aria-label="Estadisticas del perfil">
-                <div>
+                <Link to={`/perfil/${perfil?.idUsuario ?? usuario?.idUsuario}/seguidores`}>
                   <strong>{(perfil?.seguidores ?? 0).toLocaleString('es-MX')}</strong>
                   <span>Seguidores</span>
-                </div>
-                <div>
+                </Link>
+                <Link to={`/perfil/${perfil?.idUsuario ?? usuario?.idUsuario}/seguidos`}>
                   <strong>{(perfil?.seguidos ?? 0).toLocaleString('es-MX')}</strong>
                   <span>Seguidos</span>
-                </div>
+                </Link>
                 <div>
                   <strong>{(perfil?.totalMeEncanta ?? 0).toLocaleString('es-MX')}</strong>
                   <span>Me encanta</span>
