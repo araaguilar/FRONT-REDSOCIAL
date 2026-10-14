@@ -27,6 +27,11 @@ export const momentoService = {
   })),
   alternarMeGusta: (idMomento) => llamar(() => httpClient.post(`/momentos/${idMomento}/me-encanta`)),
   eliminar: (idMomento) => llamar(() => httpClient.delete(`/momentos/${idMomento}`)),
+  comentarios: (idMomento, { cursor, cantidad = 20, padre } = {}) => llamar(() => httpClient.get(`/momentos/${idMomento}/comentarios`, {
+    params: { cursor, cantidad, padre },
+  })),
+  crearComentario: (idMomento, texto, idComentarioPadre = null) => llamar(() => httpClient.post(`/momentos/${idMomento}/comentarios`, { texto, idComentarioPadre })),
+  alternarMeGustaComentario: (idComentario) => llamar(() => httpClient.post(`/momentos/comentarios/${idComentario}/me-encanta`)),
   crear: ({ texto, tipoAdjunto, archivo, linkUrl }) => {
     const formData = new FormData()
     formData.append('texto', texto)

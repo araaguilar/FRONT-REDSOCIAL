@@ -17,6 +17,7 @@ const normalizarMediaUrl = (url) => {
 }
 
 const inicialesDe = (texto) => (texto || 'MM').replace('@', '').slice(0, 2).toUpperCase()
+const esUrlAvatar = (avatar) => /^https?:\/\//i.test(avatar || '') || String(avatar || '').startsWith('/')
 
 const motivosReporte = [
   { id: 'spam', texto: 'Spam' },
@@ -70,6 +71,17 @@ export default function Inicio() {
   const [enviandoReporte, setEnviandoReporte] = useState(false)
   const [errorReporte, setErrorReporte] = useState('')
   const [popExito, setPopExito] = useState('')
+  const [comentarioRapidoAbierto, setComentarioRapidoAbierto] = useState({})
+  const [comentariosPantalla, setComentariosPantalla] = useState(null)
+  const [comentariosCerrando, setComentariosCerrando] = useState(false)
+  const [comentariosPorMomento, setComentariosPorMomento] = useState({})
+  const [comentarioTexto, setComentarioTexto] = useState({})
+  const [comentariosCargando, setComentariosCargando] = useState({})
+  const [comentariosPublicando, setComentariosPublicando] = useState({})
+  const [comentariosError, setComentariosError] = useState({})
+  const [respuestasPorComentario, setRespuestasPorComentario] = useState({})
+  const [respuestasCargando, setRespuestasCargando] = useState({})
+  const [respondiendoA, setRespondiendoA] = useState(null)
 
   const seleccionarArchivo = (e) => {
     const archivo = e.target.files?.[0]
@@ -154,6 +166,215 @@ export default function Inicio() {
 
   const totalLikes = (likes) => Number(likes || 0).toLocaleString('en-US')
   const esMomentoPropio = (post) => Number(post.idUsuario) === Number(usuario?.idUsuario)
+
+  const mapearComentario = (comentario) => ({
+    id: comentario.idComentario,
+    idUsuario: comentario.idUsuario,
+    autor: comentario.autor || 'Moment',
+    usuario: comentario.usuario || '@moment',
+    avatar: comentario.avatar || inicialesDe(comentario.autor || comentario.usuario),
+    texto: comentario.texto || '',
+    likes: comentario.totalMeGusta ?? 0,
+    leGusta: Boolean(comentario.leGusta),
+    totalRespuestas: comentario.totalRespuestas ?? 0,
+    idComentarioPadre: comentario.idComentarioPadre ?? null,
+    tiempo: formatearFechaMomento(comentario.fechaCreacion),
+  })
+
+  const cargarComentarios = async (idMomento) => {
+    setComentariosCargando((actual) => ({ ...actual, [idMomento]: true }))
+    setComentariosError((actual) => ({ ...actual, [idMomento]: '' }))
+    const respuesta = await momentoService.comentarios(idMomento)
+    setComentariosCargando((actual) => ({ ...actual, [idMomento]: false }))
+
+    if (!respuesta.exito) {
+      setComentariosError((actual) => ({ ...actual, [idMomento]: respuesta.mensaje || 'Ups, algo salió mal. Inténtalo más tarde' }))
+      return
+    }
+
+    setComentariosPorMomento((actual) => ({
+      ...actual,
+      [idMomento]: (respuesta.datos?.items ?? []).map(mapearComentario).reverse(),
+    }))
+  }
+
+  const abrirPantallaComentarios = (post) => {
+    setComentariosCerrando(false)
+    setComentariosPantalla(post)
+    if (!comentariosPorMomento[post.id]) cargarComentarios(post.id)
+  }
+
+  const cerrarPantallaComentarios = () => {
+    setComentariosCerrando(true)
+    window.setTimeout(() => {
+      setComentariosPantalla(null)
+      setComentariosCerrando(false)
+    }, 220)
+  }
+
+  const alternarComentarioRapido = (post) => {
+    const siguiente = !comentarioRapidoAbierto[post.id]
+    setComentarioRapidoAbierto((actual) => ({ ...actual, [post.id]: siguiente }))
+    if (siguiente && !comentariosPorMomento[post.id]) cargarComentarios(post.id)
+  }
+
+  const publicarComentario = async (idMomento, idPadreForzado) => {
+    const idPadre = idPadreForzado !== undefined
+      ? idPadreForzado
+      : (respondiendoA?.idMomento === idMomento ? respondiendoA.idComentario : null)
+    const claveTexto = idPadre ? `respuesta-${idPadre}` : idMomento
+    const texto = (comentarioTexto[claveTexto] || '').trim()
+    if (!texto) {
+      setComentariosError((actual) => ({ ...actual, [idMomento]: 'Escribe un comentario.' }))
+      return
+    }
+
+    if (texto.length > 300) {
+      setComentariosError((actual) => ({ ...actual, [idMomento]: 'El comentario no puede superar los 300 caracteres.' }))
+      return
+    }
+
+    setComentariosPublicando((actual) => ({ ...actual, [claveTexto]: true }))
+    setComentariosError((actual) => ({ ...actual, [idMomento]: '' }))
+    const respuesta = await momentoService.crearComentario(idMomento, texto, idPadre)
+    setComentariosPublicando((actual) => ({ ...actual, [claveTexto]: false }))
+
+    if (!respuesta.exito || !respuesta.datos) {
+      setComentariosError((actual) => ({ ...actual, [idMomento]: respuesta.mensaje || 'Ups, algo salió mal. Inténtalo más tarde' }))
+      return
+    }
+
+    const comentario = mapearComentario(respuesta.datos)
+    if (idPadre) {
+      setRespuestasPorComentario((actual) => ({
+        ...actual,
+        [idPadre]: [...(actual[idPadre] ?? []), comentario],
+      }))
+      const actualizarRespuestas = (items) => items.map((item) => (
+        item.id === idPadre
+          ? { ...item, totalRespuestas: item.totalRespuestas + 1 }
+          : item
+      ))
+      setComentariosPorMomento((actual) => ({ ...actual, [idMomento]: actualizarRespuestas(actual[idMomento] ?? []) }))
+      setRespuestasPorComentario((actual) => Object.fromEntries(Object.entries(actual).map(([clave, items]) => [clave, actualizarRespuestas(items)])))
+      setRespondiendoA(null)
+    } else {
+      setComentariosPorMomento((actual) => ({
+        ...actual,
+        [idMomento]: [...(actual[idMomento] ?? []), comentario],
+      }))
+    }
+    setComentarioTexto((actual) => ({ ...actual, [claveTexto]: '' }))
+    setFeed((actual) => actual.map((post) => (
+      post.id === idMomento
+        ? { ...post, comentarios: String(respuesta.datos.totalComentarios ?? Number(post.comentarios || 0) + 1) }
+        : post
+    )))
+  }
+
+  const cargarRespuestas = async (idMomento, idComentario) => {
+    setRespuestasCargando((actual) => ({ ...actual, [idComentario]: true }))
+    const respuesta = await momentoService.comentarios(idMomento, { padre: idComentario, cantidad: 12 })
+    setRespuestasCargando((actual) => ({ ...actual, [idComentario]: false }))
+    if (!respuesta.exito) return
+    setRespuestasPorComentario((actual) => ({
+      ...actual,
+      [idComentario]: (respuesta.datos?.items ?? []).map(mapearComentario).reverse(),
+    }))
+  }
+
+  const ocultarRespuestas = (idComentario) => {
+    setRespuestasPorComentario((actual) => {
+      const siguiente = { ...actual }
+      delete siguiente[idComentario]
+      return siguiente
+    })
+  }
+
+  const alternarLikeComentario = async (idComentario) => {
+    const respuesta = await momentoService.alternarMeGustaComentario(idComentario)
+    if (!respuesta.exito || !respuesta.datos) return
+
+    const aplicar = (items = []) => items.map((item) => (
+      item.id === idComentario
+        ? { ...item, leGusta: respuesta.datos.leGusta, likes: respuesta.datos.totalMeGusta }
+        : item
+    ))
+
+    setComentariosPorMomento((actual) => Object.fromEntries(Object.entries(actual).map(([clave, items]) => [clave, aplicar(items)])))
+    setRespuestasPorComentario((actual) => Object.fromEntries(Object.entries(actual).map(([clave, items]) => [clave, aplicar(items)])))
+  }
+
+  const renderComentario = (comentario, post, nivel = 0) => {
+    const respuestas = respuestasPorComentario[comentario.id] ?? []
+    const mostrandoRespuestas = respuestas.length > 0
+    const estaRespondiendo = respondiendoA?.idComentario === comentario.id
+    const claveRespuesta = `respuesta-${comentario.id}`
+
+    return (
+      <article
+        className={`comment-thread${(mostrandoRespuestas || comentario.totalRespuestas > 0) ? ' con-respuestas' : ''}${nivel > 0 ? ' es-respuesta' : ''}`}
+        key={comentario.id}
+        style={{ '--nivel': Math.min(nivel, 5) }}
+      >
+        <div className="comment-item">
+          {esUrlAvatar(comentario.avatar) ? (
+            <img src={normalizarMediaUrl(comentario.avatar)} alt={comentario.autor} />
+          ) : (
+            <span>{comentario.avatar}</span>
+          )}
+          <div>
+            <p><strong>{comentario.usuario}</strong> {comentario.texto}</p>
+            <div className="comment-meta">
+              <small>{comentario.tiempo}</small>
+              <button className={comentario.leGusta ? 'liked' : ''} onClick={() => alternarLikeComentario(comentario.id)}>
+                {comentario.leGusta ? '♥' : '♡'} {comentario.likes > 0 ? comentario.likes : ''}
+              </button>
+              <button onClick={() => setRespondiendoA({ idMomento: post.id, idComentario: comentario.id, usuario: comentario.usuario })}>
+                Responder
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {comentario.totalRespuestas > 0 && !mostrandoRespuestas && (
+          <button className="comment-replies-btn" onClick={() => cargarRespuestas(post.id, comentario.id)} disabled={respuestasCargando[comentario.id]}>
+            {respuestasCargando[comentario.id] ? 'Cargando...' : `Ver ${comentario.totalRespuestas} respuestas`}
+          </button>
+        )}
+
+        {estaRespondiendo && (
+          <div className="comment-composer reply">
+            <input
+              value={comentarioTexto[claveRespuesta] || ''}
+              onChange={(e) => setComentarioTexto((actual) => ({ ...actual, [claveRespuesta]: e.target.value.slice(0, 300) }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  publicarComentario(post.id)
+                }
+              }}
+              placeholder={`Responder a ${comentario.usuario}`}
+              maxLength={300}
+              disabled={comentariosPublicando[claveRespuesta]}
+            />
+            <button onClick={() => publicarComentario(post.id)} disabled={comentariosPublicando[claveRespuesta]}>
+              {comentariosPublicando[claveRespuesta] ? <span className="spinner" aria-hidden="true" /> : 'Responder'}
+            </button>
+          </div>
+        )}
+
+        {mostrandoRespuestas && (
+          <div className="comment-replies">
+            <button className="comment-replies-btn hide" onClick={() => ocultarRespuestas(comentario.id)}>
+              Ocultar respuestas
+            </button>
+            {respuestas.map((respuesta) => renderComentario(respuesta, post, nivel + 1))}
+          </div>
+        )}
+      </article>
+    )
+  }
 
   const confirmarEliminarMomento = async () => {
     if (!momentoAEliminar) return
@@ -329,8 +550,7 @@ export default function Inicio() {
                   >
                     {post.leGusta ? '♥' : '♡'}
                   </button>
-                  <button aria-label="Comentar">☰</button>
-                  <button aria-label="Enviar">✉</button>
+                  <button aria-label="Comentar" onClick={() => alternarComentarioRapido(post)}>☰</button>
                 </div>
                 <button className="share-action" aria-label="Compartir momento" title="Compartir momento">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -343,8 +563,34 @@ export default function Inicio() {
                 <strong>{totalLikes(post.likes)} me gusta</strong>
                 <p><span>{post.usuario}</span> {post.pensamiento}</p>
                 {post.linkUrl && <a className="post-link" href={post.linkUrl} target="_blank" rel="noreferrer">Abrir enlace</a>}
-                <button className="comments-btn">Ver {post.comentarios} comentarios</button>
+                <button className="comments-btn" onClick={() => abrirPantallaComentarios(post)}>
+                  Ver {post.comentarios} comentarios
+                </button>
               </div>
+
+              {comentarioRapidoAbierto[post.id] && (
+                <section className="quick-comment-panel" aria-label={`Comentar momento de ${post.autor}`}>
+                  <div className="comment-composer">
+                    <input
+                      value={comentarioTexto[post.id] || ''}
+                      onChange={(e) => setComentarioTexto((actual) => ({ ...actual, [post.id]: e.target.value.slice(0, 300) }))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          publicarComentario(post.id, null)
+                        }
+                      }}
+                      placeholder="Escribe un comentario..."
+                      maxLength={300}
+                      disabled={comentariosPublicando[post.id]}
+                    />
+                    <button onClick={() => publicarComentario(post.id, null)} disabled={comentariosPublicando[post.id]}>
+                      {comentariosPublicando[post.id] ? <span className="spinner" aria-hidden="true" /> : 'Publicar'}
+                    </button>
+                  </div>
+                  {comentariosError[post.id] && <p className="comments-error">{comentariosError[post.id]}</p>}
+                </section>
+              )}
             </article>
           ))}
         </div>
@@ -400,6 +646,65 @@ export default function Inicio() {
                 {eliminandoMomento ? <span className="spinner" aria-hidden="true" /> : 'Eliminar'}
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {comentariosPantalla && (
+        <div className={`comments-screen-backdrop${comentariosCerrando ? ' cerrando' : ''}`} role="presentation" onClick={cerrarPantallaComentarios}>
+          <section className={`comments-screen${comentariosCerrando ? ' cerrando' : ''}`} role="dialog" aria-modal="true" aria-label={`Comentarios de ${comentariosPantalla.autor}`} onClick={(e) => e.stopPropagation()}>
+            <header className="comments-screen-head">
+              <div>
+                <p className="feed-kicker">Comentarios</p>
+                <h2>{comentariosPantalla.autor}</h2>
+              </div>
+              <button onClick={cerrarPantallaComentarios} aria-label="Cerrar comentarios">×</button>
+            </header>
+
+            <div className="comments-screen-post">
+              <strong>{comentariosPantalla.usuario}</strong>
+              <p>{comentariosPantalla.pensamiento}</p>
+            </div>
+
+            <div className="comments-screen-list">
+              {comentariosCargando[comentariosPantalla.id] && (
+                <div className="comments-skeleton">
+                  <span className="skeleton avatar" />
+                  <div>
+                    <span className="skeleton line wide" />
+                    <span className="skeleton line" />
+                  </div>
+                </div>
+              )}
+
+              {!comentariosCargando[comentariosPantalla.id] && (comentariosPorMomento[comentariosPantalla.id] ?? []).length === 0 && (
+                <p className="comments-empty">Sé la primera persona en comentar este momento.</p>
+              )}
+
+              {(comentariosPorMomento[comentariosPantalla.id] ?? []).map((comentario) => renderComentario(comentario, comentariosPantalla))}
+            </div>
+
+            <footer className="comments-screen-composer">
+              <div className="comment-composer">
+                <input
+                  value={comentarioTexto[comentariosPantalla.id] || ''}
+                  onChange={(e) => setComentarioTexto((actual) => ({ ...actual, [comentariosPantalla.id]: e.target.value.slice(0, 300) }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      publicarComentario(comentariosPantalla.id, null)
+                    }
+                  }}
+                  placeholder="Escribe un comentario..."
+                  maxLength={300}
+                  disabled={comentariosPublicando[comentariosPantalla.id]}
+                />
+                <button onClick={() => publicarComentario(comentariosPantalla.id, null)} disabled={comentariosPublicando[comentariosPantalla.id]}>
+                  {comentariosPublicando[comentariosPantalla.id] ? <span className="spinner" aria-hidden="true" /> : 'Publicar'}
+                </button>
+              </div>
+              {comentariosError[comentariosPantalla.id] && <p className="comments-error">{comentariosError[comentariosPantalla.id]}</p>}
+            </footer>
           </section>
         </div>
       )}

@@ -24,7 +24,6 @@ const ajustes = [
   { titulo: 'Cuenta', descripcion: 'Datos personales, nombre de usuario y correo.' },
   { titulo: 'Privacidad', descripcion: 'Controla quien puede ver tus momentos y enviarte mensajes.' },
   { titulo: 'Notificaciones', descripcion: 'Administra avisos de me encanta, comentarios y mensajes.' },
-  { titulo: 'Seguridad', descripcion: 'Contrasena, sesiones activas y proteccion de la cuenta.' },
 ]
 
 const opcionesCuenta = [

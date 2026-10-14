@@ -44,6 +44,14 @@ El sidebar puede estar expandido o contraído según preferencia del usuario. No
 
 La preferencia se guarda en `localStorage` y debe respetarse por usuario.
 
+## Comentarios
+
+Los comentarios de publicaciones son funcionales, no decorativos. Cada comentario admite emojis y tiene límite de 300 caracteres.
+
+Los comentarios pueden recibir me encanta reales y respuestas anidadas. Para rendimiento, cargar primero los comentarios principales y pedir las respuestas bajo demanda al tocar `Ver respuestas`; no traer todo el árbol completo desde el inicio.
+
+La visualización de respuestas debe sentirse como cronología: indentación ligera, línea vertical sutil y acciones pequeñas (`me encanta`, `responder`) sin convertirlo en un chat pesado.
+
 ## Formularios de seguridad
 
 Los errores no deben mostrarse como cards grandes. Deben aparecer como texto rojo debajo del campo correspondiente.
