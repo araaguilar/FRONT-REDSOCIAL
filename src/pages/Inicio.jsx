@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppSidebar from '../components/AppSidebar'
 import MessagesWidget from '../components/MessagesWidget'
@@ -29,6 +29,15 @@ const motivosReporte = [
   { id: 'otro', texto: 'Otro' },
 ]
 
+const obtenerImagenes = (archivoUrl) => {
+  if (!archivoUrl) return []
+  try {
+    const valor = JSON.parse(archivoUrl)
+    if (Array.isArray(valor)) return valor.map(normalizarMediaUrl)
+  } catch {}
+  return [normalizarMediaUrl(archivoUrl)]
+}
+
 const mapearMomento = (momento) => ({
   id: momento.idMomento,
   idUsuario: momento.idUsuario,
@@ -36,7 +45,7 @@ const mapearMomento = (momento) => ({
   usuario: momento.usuario || '@moment',
   avatar: momento.avatar || inicialesDe(momento.autor || momento.usuario),
   tiempo: formatearFechaMomento(momento.fechaCreacion),
-  imagen: normalizarMediaUrl(momento.archivoUrl),
+  imagenes: obtenerImagenes(momento.archivoUrl),
   tipoAdjunto: momento.tipoAdjunto,
   linkUrl: momento.linkUrl,
   pensamiento: momento.texto,
@@ -54,8 +63,23 @@ export default function Inicio() {
   const [estadoAbierto, setEstadoAbierto] = useState(null)
   const [crearAbierto, setCrearAbierto] = useState(false)
   const [tipoMomento, setTipoMomento] = useState('')
-  const [previewMomento, setPreviewMomento] = useState('')
-  const [archivoMomento, setArchivoMomento] = useState(null)
+  const [previewMomento, setPreviewMomento] = useState([])
+  const [archivosMomento, setArchivosMomento] = useState([])
+  const [imagenArrastrada, setImagenArrastrada] = useState(null)
+  const [imagenModal, setImagenModal] = useState(null)
+  const [indiceImagen, setIndiceImagen] = useState({})
+  const [ocultarIndicadores, setOcultarIndicadores] = useState(false)
+  const indicadorTimer = useRef(null)
+
+  const iniciarMantenerImagen = () => {
+    window.clearTimeout(indicadorTimer.current)
+    indicadorTimer.current = window.setTimeout(() => setOcultarIndicadores(true), 260)
+  }
+
+  const terminarMantenerImagen = () => {
+    window.clearTimeout(indicadorTimer.current)
+    setOcultarIndicadores(false)
+  }
   const [textoMomento, setTextoMomento] = useState('')
   const [linkMomento, setLinkMomento] = useState('')
   const [feed, setFeed] = useState([])
@@ -84,16 +108,41 @@ export default function Inicio() {
   const [respondiendoA, setRespondiendoA] = useState(null)
 
   const seleccionarArchivo = (e) => {
-    const archivo = e.target.files?.[0]
-    if (!archivo) return
-    setArchivoMomento(archivo)
-    setPreviewMomento(URL.createObjectURL(archivo))
+    const nuevosArchivos = Array.from(e.target.files ?? [])
+    if (!nuevosArchivos.length) return
+    const total = archivosMomento.length + nuevosArchivos.length
+    if (total > 10) { setErrorCrear('Puedes seleccionar hasta 10 imágenes.'); return }
+    setArchivosMomento((actuales) => [...actuales, ...nuevosArchivos])
+    setPreviewMomento((actuales) => [...actuales, ...nuevosArchivos.map((archivo) => URL.createObjectURL(archivo))])
+    e.target.value = ''
+  }
+
+  const eliminarImagenMomento = (indice) => {
+    setArchivosMomento((actuales) => actuales.filter((_, posicion) => posicion !== indice))
+    setPreviewMomento((actuales) => actuales.filter((_, posicion) => posicion !== indice))
+  }
+
+  const moverImagenMomento = (indiceDestino) => {
+    if (imagenArrastrada === null || imagenArrastrada === indiceDestino) return
+    setArchivosMomento((actuales) => {
+      const siguiente = [...actuales]
+      const [movida] = siguiente.splice(imagenArrastrada, 1)
+      siguiente.splice(indiceDestino, 0, movida)
+      return siguiente
+    })
+    setPreviewMomento((actuales) => {
+      const siguiente = [...actuales]
+      const [movida] = siguiente.splice(imagenArrastrada, 1)
+      siguiente.splice(indiceDestino, 0, movida)
+      return siguiente
+    })
+    setImagenArrastrada(null)
   }
 
   const cerrarCrearMomento = () => {
     setCrearAbierto(false)
-    setPreviewMomento('')
-    setArchivoMomento(null)
+    setPreviewMomento([])
+    setArchivosMomento([])
     setTextoMomento('')
     setLinkMomento('')
     setTipoMomento('')
@@ -211,6 +260,15 @@ export default function Inicio() {
       setComentariosCerrando(false)
     }, 220)
   }
+
+  useEffect(() => {
+    const idMomento = Number(searchParams.get('momento'))
+    if (!idMomento || !feed.length) return
+    const post = feed.find((item) => Number(item.id) === idMomento)
+    if (!post) return
+    abrirPantallaComentarios(post)
+    navigate('/', { replace: true })
+  }, [feed, navigate, searchParams])
 
   const alternarComentarioRapido = (post) => {
     const siguiente = !comentarioRapidoAbierto[post.id]
@@ -418,18 +476,17 @@ export default function Inicio() {
       return
     }
 
-    if ((tipoMomento === 'foto' || tipoMomento === 'video') && !archivoMomento) {
-      setErrorCrear(`Selecciona ${tipoMomento === 'foto' ? 'una foto' : 'un video'} para compartir.`)
-      return
-    }
-
     setPublicando(true)
     setErrorCrear('')
 
+    const tipoAdjunto = archivosMomento.length
+      ? 'foto'
+      : (tipoMomento === 'link' ? 'link' : '')
+
     const respuesta = await momentoService.crear({
       texto,
-      tipoAdjunto: tipoMomento,
-      archivo: archivoMomento,
+      tipoAdjunto,
+      archivos: archivosMomento,
       linkUrl: linkMomento.trim(),
     })
 
@@ -488,7 +545,11 @@ export default function Inicio() {
                   onClick={() => navigate(`/perfil/${post.usuario.replace('@', '')}`)}
                   aria-label={`Ver perfil de ${post.autor}`}
                 >
-                  <div className="author-avatar">{post.avatar}</div>
+                  <div className="author-avatar">
+                    {esUrlAvatar(post.avatar)
+                      ? <img src={normalizarMediaUrl(post.avatar)} alt={`Foto de ${post.autor}`} />
+                      : <span>{post.avatar}</span>}
+                  </div>
                   <div>
                     <strong>{post.autor}</strong>
                     <span>{post.usuario} · {post.tiempo}</span>
@@ -528,11 +589,30 @@ export default function Inicio() {
                 </div>
               </header>
 
-              <div className="post-image-wrap" onDoubleClick={() => darLikeConDobleClick(post.id)}>
-                {post.imagen ? (
-                  post.tipoAdjunto === 'video'
-                    ? <video className="post-image" src={post.imagen} controls />
-                    : <img className="post-image" src={post.imagen} alt={`Momento compartido por ${post.autor}`} />
+              <div
+                className="post-image-wrap"
+                onDoubleClick={() => darLikeConDobleClick(post.id)}
+                onPointerDown={iniciarMantenerImagen}
+                onPointerUp={terminarMantenerImagen}
+                onPointerCancel={terminarMantenerImagen}
+                onPointerLeave={terminarMantenerImagen}
+              >
+                {post.imagenes?.length ? (
+                  <>
+                    <img className="post-image" src={post.imagenes[indiceImagen[post.id] || 0]} alt={`Momento compartido por ${post.autor}`} />
+                    {post.imagenes.length > 1 && <>
+                      <div
+                        className="carousel-zone carousel-zone-prev"
+                        role="button"
+                        aria-label="Imagen anterior"
+                        onClick={(e) => { e.stopPropagation(); setIndiceImagen((a) => ({ ...a, [post.id]: ((a[post.id] || 0) - 1 + post.imagenes.length) % post.imagenes.length })) }}
+                      />
+                      <div className="carousel-zone carousel-zone-next" role="button" aria-label="Siguiente imagen" onClick={(e) => { e.stopPropagation(); setIndiceImagen((a) => ({ ...a, [post.id]: ((a[post.id] || 0) + 1) % post.imagenes.length })) }} />
+                      {!ocultarIndicadores && <div className="carousel-dots" aria-label={`Imagen ${(indiceImagen[post.id] || 0) + 1} de ${post.imagenes.length}`}>
+                        {post.imagenes.map((_, indice) => <span key={indice} className={indice === (indiceImagen[post.id] || 0) ? 'activo' : ''} />)}
+                      </div>}
+                    </>}
+                  </>
                 ) : (
                   <div className="post-image post-text-only">
                     <p>{post.pensamiento}</p>
@@ -550,7 +630,11 @@ export default function Inicio() {
                   >
                     {post.leGusta ? '♥' : '♡'}
                   </button>
-                  <button aria-label="Comentar" onClick={() => alternarComentarioRapido(post)}>☰</button>
+                  <button aria-label="Comentar" onClick={() => alternarComentarioRapido(post)}>
+                    <svg className="comment-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 4h8a4 4 0 0 1 4 4v4a4 4 0 0 1-4 4h-4l-4 4v-4a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z" />
+                    </svg>
+                  </button>
                 </div>
                 <button className="share-action" aria-label="Compartir momento" title="Compartir momento">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -601,7 +685,11 @@ export default function Inicio() {
           <section className="story-modal" role="dialog" aria-modal="true" aria-label={`Momento de ${estadoAbierto.autor}`} onClick={(e) => e.stopPropagation()}>
             <header className="story-modal-head">
               <div className="author">
-                <div className="author-avatar">{estadoAbierto.avatar}</div>
+                <div className="author-avatar">
+                  {esUrlAvatar(estadoAbierto.avatar)
+                    ? <img src={normalizarMediaUrl(estadoAbierto.avatar)} alt={`Foto de ${estadoAbierto.autor}`} />
+                    : <span>{estadoAbierto.avatar}</span>}
+                </div>
                 <div>
                   <strong>{estadoAbierto.autor}</strong>
                   <span>{estadoAbierto.usuario} · {estadoAbierto.tiempo}</span>
@@ -611,10 +699,8 @@ export default function Inicio() {
             </header>
 
             <div className="story-modal-media">
-              {estadoAbierto.imagen ? (
-                estadoAbierto.tipoAdjunto === 'video'
-                  ? <video src={estadoAbierto.imagen} controls />
-                  : <img src={estadoAbierto.imagen} alt={`Momento compartido por ${estadoAbierto.autor}`} />
+              {estadoAbierto.imagenes?.length ? (
+                <img src={estadoAbierto.imagenes[0]} alt={`Momento compartido por ${estadoAbierto.autor}`} />
               ) : (
                 <div className="story-text-only">{estadoAbierto.pensamiento}</div>
               )}
@@ -770,17 +856,24 @@ export default function Inicio() {
 
             <div className="moment-attach-row" aria-label="Agregar adjunto">
               {[
-                { tipo: 'foto', icono: '▧', label: 'Imagen' },
-                { tipo: 'video', icono: '▷', label: 'Video' },
+                {
+                  tipo: 'foto',
+                  icono: <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="m4 17 4.5-4.5 3.5 3 2.5-2.5L20 17" /></svg>,
+                  label: 'Agregar imágenes',
+                },
                 { tipo: 'link', icono: '↗', label: 'Link' },
               ].map((item) => (
                 <button
-                  className={tipoMomento === item.tipo ? 'activo' : ''}
+                  className={tipoMomento === item.tipo || (item.tipo === 'foto' && previewMomento.length) ? 'activo' : ''}
                   key={item.tipo}
                   onClick={() => {
+                    if (item.tipo === 'foto') {
+                      setTipoMomento('foto')
+                      setLinkMomento('')
+                      return
+                    }
+
                     setTipoMomento(tipoMomento === item.tipo ? '' : item.tipo)
-                    setPreviewMomento('')
-                    setArchivoMomento(null)
                     setLinkMomento('')
                   }}
                   title={item.label}
@@ -791,18 +884,57 @@ export default function Inicio() {
               ))}
             </div>
 
-            {(tipoMomento === 'foto' || tipoMomento === 'video') && (
+            <>
               <label className="moment-upload">
-                <input type="file" accept={tipoMomento === 'foto' ? 'image/*' : 'video/*'} onChange={seleccionarArchivo} hidden />
-                {previewMomento ? (
-                  tipoMomento === 'foto'
-                    ? <img src={previewMomento} alt="Vista previa del momento" />
-                    : <video src={previewMomento} controls />
+                <input type="file" accept="image/*,.heic,.heif" multiple onChange={seleccionarArchivo} hidden />
+                {previewMomento.length ? (
+                  <>
+                    <div className="moment-upload-cover-actions">
+                      <span className="moment-upload-more">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="12" height="12" rx="1.5" /><path d="M8 2h11a3 3 0 0 1 3 3v11" /><path d="m7 14 3-3 2.5 2 2-2 2.5 3" /></svg>
+                        Agregar imagen
+                      </span>
+                      {previewMomento.length === 1 && (
+                        <button type="button" className="moment-upload-delete" aria-label="Eliminar imagen principal" onClick={(e) => { e.preventDefault(); e.stopPropagation(); eliminarImagenMomento(0) }}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                        </button>
+                      )}
+                    </div>
+                    {previewMomento.length === 1 ? (
+                      <div className="moment-upload-cover">
+                        <img src={previewMomento[0]} alt="Vista previa principal del momento" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setImagenModal(previewMomento[0]) }} />
+                      </div>
+                    ) : (
+                      <div className="moment-upload-grid">
+                        {previewMomento.map((src, indice) => (
+                          <div
+                            className="moment-upload-thumb"
+                            key={src}
+                            draggable
+                            onDragStart={() => setImagenArrastrada(indice)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => moverImagenMomento(indice)}
+                          >
+                            <img src={src} alt={`Vista previa ${indice + 1} del momento`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setImagenModal(src) }} />
+                            <button
+                              type="button"
+                              className="moment-upload-thumb-delete"
+                              aria-label={`Eliminar imagen ${indice + 1}`}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); eliminarImagenMomento(indice) }}
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                            </button>
+                            <span>{indice + 1}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <span>{tipoMomento === 'foto' ? 'Subir foto' : 'Subir video'}</span>
+                  <span>Agregar imagen</span>
                 )}
               </label>
-            )}
+            </>
 
             {tipoMomento === 'link' && (
               <div className="moment-link-field">
@@ -820,6 +952,15 @@ export default function Inicio() {
                 {publicando ? <span className="spinner" aria-hidden="true" /> : 'Publicar momento'}
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {imagenModal && (
+        <div className="moment-image-modal-backdrop" role="presentation" onClick={() => setImagenModal(null)}>
+          <section className="moment-image-modal" role="dialog" aria-modal="true" aria-label="Vista previa de imagen" onClick={(e) => e.stopPropagation()}>
+            <button type="button" aria-label="Cerrar vista previa" onClick={() => setImagenModal(null)}>×</button>
+            <img src={imagenModal} alt="Vista ampliada de la imagen seleccionada" />
           </section>
         </div>
       )}

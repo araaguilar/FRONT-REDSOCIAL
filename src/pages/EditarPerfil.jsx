@@ -23,6 +23,8 @@ const formatearFecha = (fecha) => {
     : valor.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
+const IconoPersona = () => <svg className="default-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>
+
 export default function EditarPerfil() {
   const { usuario } = useAuth()
   const [perfil, setPerfil] = useState(null)
@@ -43,6 +45,8 @@ export default function EditarPerfil() {
   const [mensaje, setMensaje] = useState('')
   const [popExito, setPopExito] = useState('')
   const [error, setError] = useState('')
+  const [confirmarEliminarFoto, setConfirmarEliminarFoto] = useState(false)
+  const [eliminandoFoto, setEliminandoFoto] = useState(false)
   const inputFotoRef = useRef(null)
   const imagenFotoRef = useRef(null)
   const dragFotoRef = useRef(null)
@@ -156,6 +160,21 @@ export default function EditarPerfil() {
     setMensaje('')
   }
 
+  const eliminarFoto = async () => {
+    setEliminandoFoto(true)
+    const resultado = await authService.eliminarFotoPerfil()
+    setEliminandoFoto(false)
+    if (!resultado.exito) {
+      setError(resultado.mensaje || 'No se pudo eliminar la foto.')
+      return
+    }
+    setPerfil(resultado.datos)
+    setConfirmarEliminarFoto(false)
+    window.dispatchEvent(new Event('perfil-actualizado'))
+    setPopExito('Foto de perfil eliminada')
+    window.setTimeout(() => setPopExito(''), 1900)
+  }
+
   const cerrarModalFoto = () => {
     setModalFotoAbierto(false)
     setArchivoFoto(null)
@@ -194,7 +213,11 @@ export default function EditarPerfil() {
   const ajustarZoomFoto = (e) => {
     e.preventDefault()
     const cambio = e.deltaY > 0 ? -0.08 : 0.08
-    setZoomFoto((actual) => Math.min(3, Math.max(1, Number((actual + cambio).toFixed(2)))))
+    setZoomFoto((actual) => Math.min(3, Math.max(0.5, Number((actual + cambio).toFixed(2)))))
+  }
+
+  const cambiarZoomFoto = (cambio) => {
+    setZoomFoto((actual) => Math.min(3, Math.max(0.5, Number((actual + cambio).toFixed(2)))))
   }
 
   const centrarFoto = () => {
@@ -221,7 +244,9 @@ export default function EditarPerfil() {
       return
     }
 
-    const escalaBase = Math.max(size / imagen.naturalWidth, size / imagen.naturalHeight)
+    // Conservamos la imagen completa dentro del avatar circular, sin forzar
+    // un zoom que corte la parte superior o inferior.
+    const escalaBase = Math.min(size / imagen.naturalWidth, size / imagen.naturalHeight)
     const escala = escalaBase * zoomFoto
     const ancho = imagen.naturalWidth * escala
     const alto = imagen.naturalHeight * escala
@@ -291,13 +316,18 @@ export default function EditarPerfil() {
 
         <section className="edit-profile-panel">
           <aside className="edit-profile-preview">
-            <button className="profile-photo editable" onClick={() => inputFotoRef.current?.click()} aria-label="Cambiar foto de perfil">
+            <div className="edit-profile-photo-wrap">
+              <button className="profile-photo editable" onClick={() => inputFotoRef.current?.click()} aria-label="Cambiar foto de perfil">
               {fotoPerfilUrl
                 ? <img src={fotoPerfilUrl} alt="Foto de perfil" />
-                : <span>{(perfil?.nombreUsuario || nombre).slice(0, 2).toUpperCase()}</span>}
+                : <span><IconoPersona /></span>}
               <i>{subiendoFoto ? '...' : '＋'}</i>
-            </button>
-            <input ref={inputFotoRef} type="file" accept="image/*" onChange={cambiarFoto} hidden />
+              </button>
+              {fotoPerfilUrl && <button type="button" className="delete-profile-photo-btn" aria-label="Eliminar foto de perfil" onClick={() => setConfirmarEliminarFoto(true)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+              </button>}
+            </div>
+            <input ref={inputFotoRef} type="file" accept="image/*,.heic,.heif" onChange={cambiarFoto} hidden />
             <div>
               <strong>{perfil?.nombrePerfil || nombre}</strong>
               <span>@{String(perfil?.nombreUsuario || nombre).toLowerCase()}</span>
@@ -420,6 +450,12 @@ export default function EditarPerfil() {
               )}
             </div>
 
+            <div className="profile-photo-zoom-controls" aria-label="Ajustar zoom de la foto">
+              <button type="button" onClick={() => cambiarZoomFoto(-0.1)} aria-label="Alejar foto">−</button>
+              <span>{Math.round(zoomFoto * 100)}%</span>
+              <button type="button" onClick={() => cambiarZoomFoto(0.1)} aria-label="Acercar foto">＋</button>
+            </div>
+
             <p className="profile-photo-hint">Arrastra para acomodar. Usa la rueda para acercar. Doble click centra la foto.</p>
 
             {errorFoto && <p className="profile-form-error">{errorFoto}</p>}
@@ -429,6 +465,20 @@ export default function EditarPerfil() {
               <button className="profile-btn primary" onClick={guardarFotoPerfil} disabled={subiendoFoto}>
                 {subiendoFoto ? <span className="spinner" aria-hidden="true" /> : 'Guardar foto'}
               </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {confirmarEliminarFoto && (
+        <div className="profile-confirm-backdrop" role="presentation" onClick={() => !eliminandoFoto && setConfirmarEliminarFoto(false)}>
+          <section className="profile-confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar eliminación de foto" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-confirm-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg></div>
+            <h2>¿Eliminar foto de perfil?</h2>
+            <p>Se mostrará el icono de persona hasta que agregues una nueva foto.</p>
+            <div className="profile-confirm-actions">
+              <button type="button" className="profile-btn" onClick={() => setConfirmarEliminarFoto(false)} disabled={eliminandoFoto}>Cancelar</button>
+              <button type="button" className="profile-btn danger" onClick={eliminarFoto} disabled={eliminandoFoto}>{eliminandoFoto ? <span className="spinner" aria-hidden="true" /> : 'Eliminar foto'}</button>
             </div>
           </section>
         </div>

@@ -32,11 +32,11 @@ export const momentoService = {
   })),
   crearComentario: (idMomento, texto, idComentarioPadre = null) => llamar(() => httpClient.post(`/momentos/${idMomento}/comentarios`, { texto, idComentarioPadre })),
   alternarMeGustaComentario: (idComentario) => llamar(() => httpClient.post(`/momentos/comentarios/${idComentario}/me-encanta`)),
-  crear: ({ texto, tipoAdjunto, archivo, linkUrl }) => {
+  crear: ({ texto, tipoAdjunto, archivos, linkUrl }) => {
     const formData = new FormData()
     formData.append('texto', texto)
     if (tipoAdjunto) formData.append('tipoAdjunto', tipoAdjunto)
-    if (archivo) formData.append('archivo', archivo)
+    ;(archivos ?? []).forEach((archivo) => formData.append('archivos', archivo))
     if (linkUrl) formData.append('linkUrl', linkUrl)
 
     return llamar(() => httpClient.post('/momentos', formData, {

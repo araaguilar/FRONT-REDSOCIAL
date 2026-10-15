@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import AppSidebar from '../components/AppSidebar'
 import MessagesWidget from '../components/MessagesWidget'
 import SuccessPop from '../components/SuccessPop'
@@ -16,10 +18,21 @@ const normalizarMediaUrl = (url) => {
   return `${apiBaseUrl}${url.startsWith('/') ? url : `/${url}`}`
 }
 
+const IconoPersona = () => <svg className="default-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>
+
+const obtenerImagenes = (archivoUrl) => {
+  if (!archivoUrl) return []
+  try {
+    const valor = JSON.parse(archivoUrl)
+    if (Array.isArray(valor)) return valor.map(normalizarMediaUrl)
+  } catch {}
+  return [normalizarMediaUrl(archivoUrl)]
+}
+
 const mapearMomento = (momento) => ({
   id: momento.idMomento,
   texto: momento.texto,
-  imagen: normalizarMediaUrl(momento.archivoUrl),
+  imagenes: obtenerImagenes(momento.archivoUrl),
   tipoAdjunto: momento.tipoAdjunto,
   linkUrl: momento.linkUrl,
   likes: momento.totalMeGusta ?? 0,
@@ -29,6 +42,7 @@ const mapearMomento = (momento) => ({
 })
 
 export default function Perfil() {
+  const navigate = useNavigate()
   const { usuario } = useAuth()
   const [perfil, setPerfil] = useState(null)
   const [momentos, setMomentos] = useState([])
@@ -37,6 +51,8 @@ export default function Perfil() {
   const [tieneMas, setTieneMas] = useState(false)
   const [cargandoMomentos, setCargandoMomentos] = useState(true)
   const [cargandoMas, setCargandoMas] = useState(false)
+  const [indicesImagen, setIndicesImagen] = useState({})
+  const [ocultarIndicadoresPerfil, setOcultarIndicadoresPerfil] = useState(false)
   const [modalFotoAbierto, setModalFotoAbierto] = useState(false)
   const [archivoFoto, setArchivoFoto] = useState(null)
   const [previewFoto, setPreviewFoto] = useState('')
@@ -45,6 +61,7 @@ export default function Perfil() {
   const [guardandoFoto, setGuardandoFoto] = useState(false)
   const [errorFoto, setErrorFoto] = useState('')
   const [popExito, setPopExito] = useState('')
+  const [modalCompartirPerfil, setModalCompartirPerfil] = useState(false)
   const cargandoRef = useRef(false)
   const inputFotoRef = useRef(null)
   const imagenFotoRef = useRef(null)
@@ -276,10 +293,10 @@ export default function Perfil() {
             <button className="profile-photo editable" onClick={abrirSelectorFoto} aria-label="Cambiar foto de perfil">
               {fotoPerfilUrl
                 ? <img src={fotoPerfilUrl} alt="Foto de perfil" />
-                : <span>{nombre.slice(0, 2).toUpperCase()}</span>}
+                : <span><IconoPersona /></span>}
               <i>＋</i>
             </button>
-            <input ref={inputFotoRef} type="file" accept="image/*" onChange={seleccionarFoto} hidden />
+            <input ref={inputFotoRef} type="file" accept="image/*,.heic,.heif" onChange={seleccionarFoto} hidden />
             <div className="profile-info">
               <p className="feed-kicker">Mi perfil</p>
               <div className="profile-title-row">
@@ -307,7 +324,7 @@ export default function Perfil() {
               <p className="profile-about">{perfil?.sobreMi || 'Sin descripción todavía.'}</p>
               <div className="profile-actions">
                 <Link className="profile-btn primary" to="/perfil/editar">Editar perfil</Link>
-                <button className="profile-btn">Compartir perfil</button>
+                <button className="profile-btn" onClick={() => setModalCompartirPerfil(true)}>Compartir perfil</button>
               </div>
             </div>
           </div>
@@ -343,17 +360,28 @@ export default function Perfil() {
           <div className="profile-moments">
             {momentos.map((momento) => (
               <article className="moment-card" key={momento.id}>
-                {momento.imagen ? (
-                  momento.tipoAdjunto === 'video'
-                    ? <video src={momento.imagen} controls />
-                    : <img src={momento.imagen} alt="Momento compartido por el usuario" />
+                {momento.imagenes?.length ? (
+                  <div className="profile-moment-carousel">
+                    <img
+                      src={momento.imagenes[indicesImagen[momento.id] || 0]}
+                      alt="Momento compartido por el usuario"
+                      onPointerDown={() => setOcultarIndicadoresPerfil(true)}
+                      onPointerUp={() => setOcultarIndicadoresPerfil(false)}
+                      onPointerLeave={() => setOcultarIndicadoresPerfil(false)}
+                    />
+                    {momento.imagenes.length > 1 && <>
+                      <div className="carousel-zone carousel-zone-prev" onClick={() => setIndicesImagen((a) => ({ ...a, [momento.id]: ((a[momento.id] || 0) - 1 + momento.imagenes.length) % momento.imagenes.length }))} />
+                      <div className="carousel-zone carousel-zone-next" onClick={() => setIndicesImagen((a) => ({ ...a, [momento.id]: ((a[momento.id] || 0) + 1) % momento.imagenes.length }))} />
+                      {!ocultarIndicadoresPerfil && <div className="carousel-dots">
+                        {momento.imagenes.map((_, indice) => <span key={indice} className={indice === (indicesImagen[momento.id] || 0) ? 'activo' : ''} />)}
+                      </div>}
+                    </>}
+                  </div>
                 ) : (
                   <div className="moment-text-preview">{momento.texto}</div>
                 )}
-                <div>
-                  <p>{momento.texto}</p>
-                  {momento.linkUrl && <a href={momento.linkUrl} target="_blank" rel="noreferrer">Abrir enlace</a>}
-                  <div className="moment-card-meta">
+                <div className="post-actions">
+                  <div>
                     <button
                       className={momento.leGusta ? 'liked' : ''}
                       onClick={() => alternarLike(momento.id)}
@@ -361,8 +389,24 @@ export default function Perfil() {
                     >
                       {momento.leGusta ? '♥' : '♡'}
                     </button>
-                    <strong>{momento.likes.toLocaleString('es-MX')} me encanta · {momento.tiempo}</strong>
+                    <button aria-label="Ver comentarios" onClick={() => navigate(`/?momento=${momento.id}`)}>
+                      <svg className="comment-action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8 4h8a4 4 0 0 1 4 4v4a4 4 0 0 1-4 4h-4l-4 4v-4a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z" />
+                      </svg>
+                    </button>
                   </div>
+                  <button className="share-action" aria-label="Compartir momento" title="Compartir momento">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6v3.4h-2.8c-4.8 0-7.6 2.9-8.2 8.1 1.6-2.4 4.1-3.6 7.3-3.6H14V18l7-6-7-6Z" /></svg>
+                  </button>
+                </div>
+
+                <div className="post-body">
+                  <strong>{momento.likes.toLocaleString('es-MX')} me gusta</strong>
+                  <p>{momento.texto}</p>
+                  {momento.linkUrl && <a className="post-link" href={momento.linkUrl} target="_blank" rel="noreferrer">Abrir enlace</a>}
+                  <button className="comments-btn" onClick={() => navigate(`/?momento=${momento.id}`)}>
+                    Ver {momento.comentarios.toLocaleString('es-MX')} comentarios
+                  </button>
                 </div>
               </article>
             ))}
@@ -426,6 +470,20 @@ export default function Perfil() {
                 {guardandoFoto ? <span className="spinner" aria-hidden="true" /> : 'Guardar foto'}
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {modalCompartirPerfil && (
+        <div className="profile-share-backdrop" role="presentation" onClick={() => setModalCompartirPerfil(false)}>
+          <section className="profile-share-modal" role="dialog" aria-modal="true" aria-label="Compartir perfil" onClick={(e) => e.stopPropagation()}>
+            <button className="profile-share-close" type="button" aria-label="Cerrar" onClick={() => setModalCompartirPerfil(false)}>×</button>
+            <p className="feed-kicker">Comparte este perfil</p>
+            <h2>{usuarioPerfil}</h2>
+            <div className="profile-share-qr">
+              <QRCodeSVG value={`${window.location.origin}/perfil/${String(perfil?.nombreUsuario || nombre).toLowerCase()}`} size={210} level="M" includeMargin />
+            </div>
+            <p>Escanea el código QR para visitar el perfil de {usuarioPerfil}.</p>
           </section>
         </div>
       )}

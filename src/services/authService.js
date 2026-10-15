@@ -48,4 +48,5 @@ export const authService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }))
   },
+  eliminarFotoPerfil: () => llamar(() => httpClient.delete('/perfil/foto')),
 }

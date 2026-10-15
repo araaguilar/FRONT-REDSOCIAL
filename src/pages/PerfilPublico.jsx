@@ -16,7 +16,17 @@ const normalizarMediaUrl = (url) => {
   return `${apiBaseUrl}${url.startsWith('/') ? url : `/${url}`}`
 }
 
+const obtenerImagenes = (archivoUrl) => {
+  if (!archivoUrl) return []
+  try {
+    const valor = JSON.parse(archivoUrl)
+    if (Array.isArray(valor)) return valor.map(normalizarMediaUrl)
+  } catch {}
+  return [normalizarMediaUrl(archivoUrl)]
+}
+
 const inicialesDe = (texto) => (texto || 'MM').replace('@', '').slice(0, 2).toUpperCase()
+const IconoPersona = () => <svg className="default-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>
 
 const motivosReporte = [
   { id: 'spam', texto: 'Spam' },
@@ -31,7 +41,7 @@ const motivosReporte = [
 const mapearMomento = (momento) => ({
   id: momento.idMomento,
   texto: momento.texto,
-  imagen: normalizarMediaUrl(momento.archivoUrl),
+  imagenes: obtenerImagenes(momento.archivoUrl),
   tipoAdjunto: momento.tipoAdjunto,
   linkUrl: momento.linkUrl,
   likes: momento.totalMeGusta ?? 0,
@@ -51,6 +61,8 @@ export default function PerfilPublico() {
   const [cargando, setCargando] = useState(true)
   const [cargandoMomentos, setCargandoMomentos] = useState(false)
   const [cargandoMas, setCargandoMas] = useState(false)
+  const [indicesImagen, setIndicesImagen] = useState({})
+  const [ocultarIndicadoresPerfil, setOcultarIndicadoresPerfil] = useState(false)
   const [error, setError] = useState('')
   const [errorMomentos, setErrorMomentos] = useState('')
   const [procesando, setProcesando] = useState(false)
@@ -229,7 +241,7 @@ export default function PerfilPublico() {
             <header className="profile-hero">
               <div className="profile-main">
                 <div className="profile-photo">
-                  {fotoPerfilUrl ? <img src={fotoPerfilUrl} alt={`Foto de ${perfil.nombrePerfil}`} /> : <span>{iniciales}</span>}
+                  {fotoPerfilUrl ? <img src={fotoPerfilUrl} alt={`Foto de ${perfil.nombrePerfil}`} /> : <span><IconoPersona /></span>}
                 </div>
 
                 <div className="profile-info">
@@ -320,10 +332,23 @@ export default function PerfilPublico() {
               <div className="profile-moments">
                 {momentos.map((momento) => (
                   <article className="moment-card" key={momento.id}>
-                    {momento.imagen ? (
-                      momento.tipoAdjunto === 'video'
-                        ? <video src={momento.imagen} controls />
-                        : <img src={momento.imagen} alt={`Momento de ${perfil.nombrePerfil}`} />
+                    {momento.imagenes?.length ? (
+                      <div className="profile-moment-carousel">
+                        <img
+                          src={momento.imagenes[indicesImagen[momento.id] || 0]}
+                          alt={`Momento de ${perfil.nombrePerfil}`}
+                          onPointerDown={() => setOcultarIndicadoresPerfil(true)}
+                          onPointerUp={() => setOcultarIndicadoresPerfil(false)}
+                          onPointerLeave={() => setOcultarIndicadoresPerfil(false)}
+                        />
+                        {momento.imagenes.length > 1 && <>
+                          <div className="carousel-zone carousel-zone-prev" onClick={() => setIndicesImagen((a) => ({ ...a, [momento.id]: ((a[momento.id] || 0) - 1 + momento.imagenes.length) % momento.imagenes.length }))} />
+                          <div className="carousel-zone carousel-zone-next" onClick={() => setIndicesImagen((a) => ({ ...a, [momento.id]: ((a[momento.id] || 0) + 1) % momento.imagenes.length }))} />
+                          {!ocultarIndicadoresPerfil && <div className="carousel-dots">
+                            {momento.imagenes.map((_, indice) => <span key={indice} className={indice === (indicesImagen[momento.id] || 0) ? 'activo' : ''} />)}
+                          </div>}
+                        </>}
+                      </div>
                     ) : (
                       <div className="moment-text-preview">{momento.texto}</div>
                     )}

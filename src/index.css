@@ -1178,8 +1178,8 @@ pre {
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff4f79, #ffb703);
-  color: #fff;
+  background: #e5e7eb;
+  color: #94a3b8;
   font-weight: 800;
 }
 
@@ -1493,7 +1493,8 @@ pre {
 }
 
 .moment-upload {
-  min-height: 220px;
+  position: relative;
+  min-height: 72px;
   margin: 14px 18px 0;
   display: grid;
   place-items: center;
@@ -1507,12 +1508,243 @@ pre {
   cursor: pointer;
 }
 
+.moment-upload:has(.moment-upload-grid) {
+  min-height: 150px;
+  padding: 10px;
+  gap: 8px;
+}
+
+.moment-upload:has(.moment-upload-thumb) {
+  display: block;
+  min-height: 0;
+  padding: 10px;
+}
+
+.moment-upload:has(.moment-upload-cover) {
+  display: block;
+  min-height: 0;
+  padding: 10px;
+}
+
+.moment-upload-cover {
+  position: relative;
+  height: 230px;
+  overflow: hidden;
+  border-radius: 7px;
+}
+
+.moment-upload-cover > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.moment-upload-cover-actions {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  box-sizing: border-box;
+  padding: 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.moment-upload-more,
+.moment-upload-delete {
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .78);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.moment-upload-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 7px 0 10px 0;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.moment-upload-more svg,
+.moment-upload-delete svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.moment-upload-delete {
+  display: grid;
+  place-items: center;
+  padding: 9px;
+  border: 0;
+  cursor: pointer;
+  border-radius: 0 7px 0 10px;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.moment-upload-delete:hover {
+  background: #be123c;
+}
+
+.moment-upload-cover + .moment-upload-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
 .moment-upload img,
 .moment-upload video {
   width: 100%;
   height: 100%;
   max-height: 360px;
   object-fit: cover;
+}
+
+.moment-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.moment-upload-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 7px;
+  cursor: grab;
+  user-select: none;
+}
+
+.moment-upload-thumb:active {
+  cursor: grabbing;
+}
+
+.moment-upload-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  min-height: 0;
+  object-fit: cover;
+}
+
+.moment-upload-thumb > span {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .82);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.moment-upload-thumb-delete {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .82);
+  color: #fff;
+  cursor: pointer;
+}
+
+.moment-upload-thumb-delete:hover {
+  background: #be123c;
+}
+
+.moment-upload-thumb-delete svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.moment-upload-cover > img,
+.moment-upload-thumb > img {
+  cursor: zoom-in;
+}
+
+.moment-image-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .72);
+}
+
+.moment-image-modal {
+  position: relative;
+  max-width: min(92vw, 900px);
+  max-height: 92vh;
+}
+
+.moment-image-modal img {
+  display: block;
+  max-width: 100%;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .35);
+}
+
+.moment-image-modal > button {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.moment-attach-row svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .moment-text-field {
@@ -1883,6 +2115,74 @@ pre {
   background: #f1f5f9;
 }
 
+.carousel-controls {
+  position: absolute;
+  inset: auto 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.carousel-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 33.333%;
+  cursor: pointer;
+}
+
+.carousel-zone-prev { left: 0; }
+.carousel-zone-next { right: 0; }
+
+.carousel-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 3;
+  display: flex;
+  gap: 5px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.carousel-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .62);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .3);
+}
+
+.carousel-dots span.activo {
+  background: #fff;
+  transform: scale(1.2);
+}
+
+.carousel-controls button,
+.carousel-controls span {
+  pointer-events: auto;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .72);
+  color: #fff;
+}
+
+.carousel-controls button {
+  width: 32px;
+  height: 32px;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.carousel-controls span {
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .post-text-only {
   display: grid;
   place-items: center;
@@ -2026,9 +2326,10 @@ pre {
   top: 50%;
   opacity: 0;
   transform: translate(-50%, -50%) scale(.55);
-  color: rgba(255, 255, 255, .94);
+  color: #ef3340;
   font-size: 92px;
   line-height: 1;
+  text-shadow: 0 3px 18px rgba(255, 255, 255, .7), 0 1px 4px rgba(127, 29, 29, .35);
   text-shadow: 0 12px 35px rgba(15, 23, 42, .28);
   pointer-events: none;
   animation: doubleHeart .72s ease-out;
@@ -2047,10 +2348,24 @@ pre {
 }
 
 .post-actions button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
   padding: 0;
   color: #111827;
   font-size: 24px;
   line-height: 1;
+}
+
+.comment-action-icon {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .post-actions button.liked {
@@ -2627,10 +2942,22 @@ pre {
   overflow: hidden;
   border: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ff4f79, #ffb703);
-  color: #fff;
+  background: #e5e7eb;
+  color: #64748b;
   font-size: 30px;
   font-weight: 900;
+}
+
+.profile-photo:not(:has(img)) {
+  background-color: #fff;
+  background-image: url('/default-avatar.jpg');
+  background-position: center;
+  background-size: 76% 76%;
+  background-repeat: no-repeat;
+}
+
+.profile-photo:not(:has(img)) > span {
+  display: none;
 }
 
 .profile-photo img {
@@ -2640,9 +2967,153 @@ pre {
   object-fit: cover;
 }
 
+/* Las fotos cargadas conservan toda la imagen dentro del avatar circular. */
+.profile-photo:has(img) {
+  background: #fff;
+}
+
+.profile-photo:has(img) img {
+  object-fit: contain;
+  background: #fff;
+}
+
+.default-profile-icon {
+  width: 52%;
+  height: 52%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Avatar predeterminado compartido cuando no existe foto. */
+.profile-avatar:not(:has(img)),
+.author-avatar:not(:has(img)),
+.chat-avatar:not(:has(img)),
+.thought-avatar:not(:has(img)),
+.moderator-profile-avatar:not(:has(img)) {
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+  color: transparent;
+  background-image: url('/default-avatar.jpg');
+  background-position: center;
+  background-size: 76% 76%;
+  background-repeat: no-repeat;
+}
+
+.profile-avatar:not(:has(img))::before,
+.author-avatar:not(:has(img))::before,
+.chat-avatar:not(:has(img))::before,
+.thought-avatar:not(:has(img))::before,
+.moderator-profile-avatar:not(:has(img))::before {
+  display: none;
+  content: '';
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  width: 23%;
+  aspect-ratio: 1;
+  border: 1.5px solid #64748b;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.profile-avatar:not(:has(img))::after,
+.author-avatar:not(:has(img))::after,
+.chat-avatar:not(:has(img))::after,
+.thought-avatar:not(:has(img))::after,
+.moderator-profile-avatar:not(:has(img))::after {
+  display: none;
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 20%;
+  width: 44%;
+  height: 27%;
+  border: 1.5px solid #64748b;
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  transform: translateX(-50%);
+}
+
+.profile-photo > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
 .profile-photo.editable {
   cursor: pointer;
 }
+
+.edit-profile-photo-wrap {
+  position: relative;
+}
+
+.delete-profile-photo-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #475569;
+  color: #fff;
+  cursor: pointer;
+}
+
+.delete-profile-photo-btn svg,
+.profile-confirm-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.profile-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .45);
+}
+
+.profile-confirm-modal {
+  width: min(390px, 100%);
+  padding: 26px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+  text-align: center;
+  animation: editProfilePanelIn .24s ease both;
+}
+
+.profile-confirm-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.profile-confirm-modal h2 { margin: 0; color: #111827; font-size: 20px; }
+.profile-confirm-modal p { margin: 8px 0 20px; color: #64748b; font-size: 13px; line-height: 1.5; }
+.profile-confirm-actions { display: flex; justify-content: center; gap: 10px; }
 
 .profile-photo.editable i {
   position: absolute;
@@ -2812,6 +3283,66 @@ pre {
   margin-top: 18px;
 }
 
+.profile-share-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, .34);
+}
+
+.profile-share-modal {
+  position: relative;
+  width: min(360px, 100%);
+  padding: 28px 24px 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .24);
+  text-align: center;
+  animation: createMomentRise .28s cubic-bezier(.18, .9, .22, 1) both;
+}
+
+.profile-share-modal h2 {
+  margin: 0 0 18px;
+  color: #111827;
+  font-size: 22px;
+}
+
+.profile-share-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #f8fafc;
+  color: #111827;
+  font-size: 23px;
+  cursor: pointer;
+}
+
+.profile-share-qr {
+  width: 226px;
+  height: 226px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.profile-share-modal > p:last-child {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .profile-btn {
   display: inline-grid;
   place-items: center;
@@ -2859,37 +3390,20 @@ pre {
 }
 
 .profile-moments {
-  display: flex;
+  display: grid;
   gap: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  width: 100%;
+  overflow: visible;
   padding: 2px 0 10px;
-  scroll-snap-type: x proximity;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
   animation: profileBlockIn .42s cubic-bezier(.2, .8, .2, 1) .14s both;
 }
 
-.profile-moments::-webkit-scrollbar {
-  height: 7px;
-}
-
-.profile-moments::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.profile-moments::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: #dbe3ee;
-}
-
 .moment-card {
-  flex: 0 0 min(100%, 860px);
+  width: 100%;
   overflow: hidden;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
-  scroll-snap-align: start;
 }
 
 .moment-card img,
@@ -2948,6 +3462,66 @@ pre {
   align-items: center;
   gap: 8px;
   padding: 0 !important;
+}
+
+.moment-comments-link {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.moment-comments-link:hover {
+  color: #e11d48;
+}
+
+.profile-moment-carousel {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-moment-carousel .carousel-zone {
+  z-index: 2;
+}
+
+.profile-moment-carousel > img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / .78;
+  object-fit: cover;
+}
+
+.profile-moment-carousel > button {
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, .68);
+  color: #fff;
+  font-size: 22px;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.profile-moment-carousel > button:nth-of-type(1) { left: 10px; }
+.profile-moment-carousel > button:nth-of-type(2) { right: 10px; }
+
+.profile-moment-carousel > span {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .moment-card-meta button {
@@ -3171,6 +3745,34 @@ pre {
   transform-origin: center;
 }
 
+.profile-photo-zoom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: -6px auto 14px;
+}
+
+.profile-photo-zoom-controls button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #dbe3ee;
+  border-radius: 50%;
+  background: #fff;
+  color: #334155;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-photo-zoom-controls span {
+  min-width: 46px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .profile-photo-hint {
   max-width: 280px;
   margin: -4px auto 0;
@@ -3356,6 +3958,7 @@ pre {
 .edit-profile-page {
   width: min(760px, calc(100vw - 340px));
   margin: 28px auto;
+  animation: editProfilePageIn .32s cubic-bezier(.2, .8, .2, 1) both;
 }
 
 .edit-profile-head {
@@ -3381,6 +3984,17 @@ pre {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
+  animation: editProfilePanelIn .38s cubic-bezier(.2, .8, .2, 1) .04s both;
+}
+
+@keyframes editProfilePageIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes editProfilePanelIn {
+  from { opacity: 0; transform: translateY(8px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .edit-profile-preview {
@@ -3787,11 +4401,11 @@ pre {
 }
 
 .search-page {
-  width: min(940px, calc(100vw - var(--sidebar-width, 250px) - 56px));
-  max-width: none;
-  margin: 0 28px 0 calc(var(--sidebar-width, 250px) + 28px);
+  width: min(940px, calc(100vw - 56px));
+  max-width: 940px;
+  margin: 0 auto;
   padding: 32px 0 80px;
-  transition: width .22s ease, margin-left .22s ease;
+  transition: width .22s ease;
 }
 
 .search-header {
@@ -4126,6 +4740,55 @@ pre {
   min-height: 230px;
   display: block;
   object-fit: cover;
+}
+
+.search-moment-media {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 230px;
+}
+
+.search-moment-media > img {
+  position: absolute;
+  inset: 0;
+}
+
+.search-moment-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 33.333%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.search-moment-zone-prev { left: 0; }
+.search-moment-zone-next { right: 0; }
+
+.search-moment-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  z-index: 3;
+  display: flex;
+  gap: 5px;
+  transform: translateX(-50%);
+}
+
+.search-moment-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.65);
+}
+
+.search-moment-dots span.activo {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(15,23,42,.2);
 }
 
 .search-text-moment {

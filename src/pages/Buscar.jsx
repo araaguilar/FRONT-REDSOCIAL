@@ -15,6 +15,15 @@ const normalizarMediaUrl = (url) => {
 
 const inicialesDe = (texto) => (texto || 'MM').replace('@', '').slice(0, 2).toUpperCase()
 
+const obtenerImagenes = (archivoUrl) => {
+  if (!archivoUrl) return []
+  try {
+    const valor = JSON.parse(archivoUrl)
+    if (Array.isArray(valor)) return valor.map(normalizarMediaUrl)
+  } catch {}
+  return [normalizarMediaUrl(archivoUrl)]
+}
+
 const mapearPerfil = (perfil) => ({
   id: perfil.idUsuario,
   nombre: perfil.nombrePerfil,
@@ -30,7 +39,7 @@ const mapearMomento = (momento) => ({
   id: momento.idMomento,
   tipo: momento.tipoAdjunto || 'texto',
   autor: momento.usuario,
-  imagen: normalizarMediaUrl(momento.archivoUrl),
+  imagenes: obtenerImagenes(momento.archivoUrl),
   texto: momento.texto,
 })
 
@@ -41,6 +50,7 @@ export default function Buscar() {
   const [cargando, setCargando] = useState(true)
   const [perfiles, setPerfiles] = useState([])
   const [momentos, setMomentos] = useState([])
+  const [indicesImagen, setIndicesImagen] = useState({})
   const perfilesRowRef = useRef(null)
   const dragRef = useRef(null)
   const bloquearClickRef = useRef(false)
@@ -269,7 +279,26 @@ export default function Buscar() {
               </article>
             )) : momentosVisibles.map((momento) => (
               <article className="search-moment" key={momento.id}>
-                {momento.imagen ? <img src={momento.imagen} alt={momento.texto} /> : <div className="search-text-moment">{momento.texto}</div>}
+                {momento.imagenes.length ? (
+                  <div className="search-moment-media">
+                    <img src={momento.imagenes[indicesImagen[momento.id] || 0]} alt={momento.texto} />
+                    {momento.imagenes.length > 1 && <>
+                      <button
+                        className="search-moment-zone search-moment-zone-prev"
+                        aria-label="Imagen anterior"
+                        onClick={() => setIndicesImagen((actual) => ({ ...actual, [momento.id]: ((actual[momento.id] || 0) - 1 + momento.imagenes.length) % momento.imagenes.length }))}
+                      />
+                      <button
+                        className="search-moment-zone search-moment-zone-next"
+                        aria-label="Imagen siguiente"
+                        onClick={() => setIndicesImagen((actual) => ({ ...actual, [momento.id]: ((actual[momento.id] || 0) + 1) % momento.imagenes.length }))}
+                      />
+                      <div className="search-moment-dots" aria-label={`Imagen ${(indicesImagen[momento.id] || 0) + 1} de ${momento.imagenes.length}`}>
+                        {momento.imagenes.map((_, indice) => <span className={indice === (indicesImagen[momento.id] || 0) ? 'activo' : ''} key={indice} />)}
+                      </div>
+                    </>}
+                  </div>
+                ) : <div className="search-text-moment">{momento.texto}</div>}
                 {momento.tipo === 'video' && <span className="media-type">▷</span>}
                 <div>
                   <strong>{momento.autor}</strong>
