@@ -6903,3 +6903,14 @@ pre {
     bottom: 78px;
   }
 }
+
+/* Historial de accesos del administrador */
+.access-log-filters { display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0; }
+.access-log-filters label { display: flex; flex: 1 1 180px; flex-direction: column; gap: 8px; }
+.access-log-filters input, .access-log-filters select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; color: inherit; background: transparent; }
+.access-log-filters .admin-search { margin: 0; }
+.access-log-table { overflow-x: auto; }
+.access-log-table table { width: 100%; border-collapse: collapse; text-align: left; }
+.access-log-table th, .access-log-table td { padding: 12px; border-bottom: 1px solid #ddd; }
+.access-log-table td { overflow-wrap: anywhere; }
+.access-log-table th:nth-child(4), .access-log-table td:nth-child(4) { min-width: 190px; }

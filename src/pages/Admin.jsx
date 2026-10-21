@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import LogsAcceso from '../components/LogsAcceso'
 import SuccessPop from '../components/SuccessPop'
 import { useAuth } from '../context/AuthContext'
 import { adminService } from '../services/adminService'
@@ -103,6 +104,10 @@ export default function Admin() {
               <span className="nav-icon">◎</span>
               <span>Usuarios</span>
             </button>
+            <button className={`nav-item${seccion === 'logs' ? ' activo' : ''}`} onClick={() => setSeccion('logs')}>
+              <span className="nav-icon">≡</span>
+              <span>Logs de acceso</span>
+            </button>
             <button className={`nav-item${seccion === 'reportes' ? ' activo' : ''}`} onClick={() => setSeccion('reportes')}>
               <span className="nav-icon">!</span>
               <span>Reportes</span>
@@ -121,6 +126,7 @@ export default function Admin() {
       </aside>
 
       <section className="moderator-page" aria-label="Panel administrador">
+        {seccion === 'logs' && <LogsAcceso />}
         {seccion === 'dashboard' && (
           <>
             <div className="moderator-stats moderator-stats-first admin-stats">
