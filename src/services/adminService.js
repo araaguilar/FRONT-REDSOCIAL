@@ -12,6 +12,7 @@ const llamar = async (peticion) => {
 }
 
 export const adminService = {
+  logsAcceso: (params = {}) => llamar(() => httpClient.get('/admin/logs-acceso', { params })),
   dashboard: () => llamar(() => httpClient.get('/admin/dashboard')),
   usuarios: ({ pagina = 1, q = '' } = {}) => llamar(() => httpClient.get('/admin/usuarios', {
     params: { pagina, q },
